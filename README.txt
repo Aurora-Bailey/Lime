@@ -3,3 +3,5 @@
 (Each project built off this is like spawning another head on the Hydra.)
 
 This is a template for SPA/static websites. Includes Gulp, SASS, ECMA6, Bootstrap/SASS, Font Awesome, and jQuery.
+
+-Kyros
