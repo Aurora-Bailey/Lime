@@ -6,6 +6,7 @@ This is a template for SPA/static websites. Includes Gulp, SASS, ECMA6, Bootstra
 
 
 //Install:
+
     // Empty project example
     echo "# Empty" >> README.md
     git init
