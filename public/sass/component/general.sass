@@ -1,0 +1,23 @@
+@import "variables"
+@import "mixins"
+
+a
+  color: $primary
+
+.light-weight
+  font-weight: 400
+
+.btn-accent
+  @include button-variant($accent-contrast, $accent, darken($accent, 20%))
+
+.btn-facebook
+  @include button-variant(white, #3B5998, darken(#3B5998, 20%))
+
+.btn-twitter
+  @include button-variant(white, #00aced, darken(#00aced, 20%))
+
+.narrow-wrapper
+  width: 650px
+  margin: auto
+  @media (max-width: 650px)
+    width: auto
