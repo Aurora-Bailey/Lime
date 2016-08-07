@@ -86,6 +86,6 @@ class Lib {
         if(site == 'facebook')
             window.open('http://www.facebook.com/share.php?u=' + url, 'Facebook', 'width=550,height=400');
         else if(site == 'twitter')
-            window.open('http://twitter.com/intent/tweet?status=' + $(document).find("title").text() + '+' + url, 'Twitter', 'width=550,height=400');
+            window.open('http://twitter.com/intent/tweet?status=' + url, 'Twitter', 'width=550,height=400');
     }
 }
