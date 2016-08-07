@@ -9,11 +9,66 @@
     font-size: 5vh
     padding: 10vh 0
     margin: 0
+    color: $background-contrast
 
   #enter-name
-    height: 5vh
-    font-size: 3vh
+    background-color: $primary
+    border: 0.5vh solid $primary-contrast
+    color: $primary-contrast
+    width: 39vh
+    height: 8vh
+    margin: 0 auto 1vh
+    border-radius: 1vh
 
     #enter-name-input
-      height: 100%
-      width: 100%
+      font-size: 4.5vh
+      width: 39vh
+      height: 8vh
+      border: none
+      background-color: transparent
+      text-align: center
+      color: darken($primary-contrast, 40%)
+
+      &::-webkit-input-placeholder /* WebKit, Blink, Edge */
+        color:     lighten($primary-contrast, 10%)
+      &:-moz-placeholder /* Mozilla Firefox 4 to 18 */
+         color:    lighten($primary-contrast, 10%)
+         opacity:  1
+      &::-moz-placeholder /* Mozilla Firefox 19+ */
+         color:    lighten($primary-contrast, 10%)
+         opacity:  1
+      &:-ms-input-placeholder  /* Internet Explorer 10-11 */
+         color:    lighten($primary-contrast, 10%)
+
+      &:focus
+        outline: none
+
+  #player-type
+    width: 40vh
+    margin: auto
+    text-align: center
+
+    div
+      line-height: 9.75vh
+      font-size: 5vh
+      width: 9.75vh
+      height: 9.75vh
+      margin: 0.75vh
+      background-color: $primary
+      border: 0.75vh solid $primary-contrast
+      color: $primary-contrast
+      border-radius: 20vh
+      display: inline-block
+      cursor: pointer
+
+      &:hover
+        background-color: lighten($primary, 20%)
+        border-color: lighten($primary-contrast, 20%)
+        color: lighten($primary-contrast, 20%)
+
+      &#type-str:hover
+        box-shadow: 0 0 5vh 0 rgba(255,0,0,1)
+      &#type-bal:hover
+        box-shadow: 0 0 5vh 0 rgba(0,255,0,1)
+      &#type-def:hover
+        box-shadow: 0 0 5vh 0 rgba(0,0,255,1)
