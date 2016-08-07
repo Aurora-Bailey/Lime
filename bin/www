@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Run this to host the public folder on the network
+// For dev testing
+
 var express = require('express');
 var path = require('path');
 var http = require('http');
