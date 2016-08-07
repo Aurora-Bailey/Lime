@@ -1,13 +1,4 @@
 class Lib {
-    static objectKeyArray(obj){
-        var arr = [];
-
-        for(var key in obj)
-            arr.push(key);
-
-        return arr;
-    }
-
     // Takes an object (obj.a = 10 obj.b = 20 etc...) returns the random key (b)
     static weightedRandom(obj){
         var total = 0;
@@ -21,38 +12,6 @@ class Lib {
                 return key;
             r -= obj[key];
         }
-    }
-
-    static randomProperty(obj){
-        var total = 0;
-        for(var key in obj)
-            total += 1;
-
-        var r = Math.random() * total;
-
-        for(var key in obj){
-            if(r < 1)
-                return obj[key];
-            r -= 1;
-        }
-    }
-
-    static inCommonProperty(obj, obj2){
-        var r = {};
-        for(var key in obj)
-            if(typeof obj2[key] !== 'undefined')
-                r[key] = obj[key];
-
-        return r;
-    }
-
-    static notProperty(obj, exclude_arr){
-        var r = {};
-        for(var key in obj)
-            if(exclude_arr.indexOf(key) == -1)
-                r[key] = obj[key];
-
-        return r;
     }
 
     static deepCopy(obj){
