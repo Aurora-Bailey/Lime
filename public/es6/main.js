@@ -16,7 +16,7 @@ class WS {
             return false;
 
         if(__DEV){
-            this.server = new WebSocket('ws://localhost:7777/');
+            this.server = new WebSocket('ws://localhost:7777/asdf');
         }else {
             this.server = new WebSocket('ws://ws.' + __DOMAIN + '/');
         }
@@ -32,7 +32,12 @@ class WS {
             setTimeout(() => this.startWebSocket(), waitTime);
         };
         this.server.onmessage = (e) => {
-            console.log(JSON.parse(e.data));
+            var d = JSON.parse(e.data);
+            console.log(d);
+            if(d.m == "ping"){
+                console.log(Date.now() - parseInt(d.v));
+            }
+
         };
     }
 
