@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "express": "~4.13.1",
+    "schemapack": "^1.4.2",
     "ws": "^1.1.1"
   },
   "devDependencies": {
