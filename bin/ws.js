@@ -20,19 +20,13 @@ if (cluster.isMaster) {
         var r = Math.floor( Math.random()*workers.length );
         workers[r].send("doit",c);
     }).listen(masterPort);
-
-    netServer.on('connect',((e) => {
-        console.log(e);
-    }));
 } else {
     var WORKER_INDEX = process.env.WORKER_INDEX,
-        gamePort = parseInt(port) + parseInt(WORKER_INDEX);
-
-    var http = require('http'),
+        gamePort = parseInt(port) + parseInt(WORKER_INDEX),
+        http = require('http'),
         WebSocketServer = require('ws').Server,
-        express = require('express');
-
-    var server = http.createServer(),
+        express = require('express'),
+        server = http.createServer(),
         wss = new WebSocketServer({server: server}),
         app = express();
 
