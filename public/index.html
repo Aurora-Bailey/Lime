@@ -51,27 +51,28 @@
     <meta name="msapplication-square310x310logo" content="images/favicomatic/mstile-310x310.png" />
 
 </head>
-<body>
+<body oncontextmenu="return false">
     <div id="homepage">
         <h1 id="logo">LOGO GOES HERE</h1>
         <div id="enter-name">
             <input id="enter-name-input" type="text" placeholder="Enter Name" />
         </div>
-        <div id="player-type"><div id="type-str">
+        <div id="player-type"><div id="type-str" class="type-button" data-value="0">
             <i class="fa fa-flash"></i>
-        </div><div id="type-bal">
+        </div><div id="type-bal" class="type-button" data-value="1">
             <i class="fa fa-balance-scale"></i>
-        </div><div id="type-def">
+        </div><div id="type-def" class="type-button" data-value="2">
             <i class="fa fa-shield"></i>
         </div></div>
+
+    </div>
+
+    <div id="maingame" class="hide">
+        <button onclick="WS.stopWebSocket()">Exit</button>
         <input type="text" onchange="WS.sendObj({m: 'load', v: this.value})" />
         <button onclick="WS.sendObj({m: 'get'})">Get Load</button>
         <button onclick="WS.sendObj({m: 'ping', v: Date.now()})">Get Ping</button>
         <button onclick="WS.sendObj({m: 'server'})">Get Server</button>
-    </div>
-
-    <div id="maingame">
-
     </div>
 
     <script src="min/script.min.js" type="text/javascript"></script>

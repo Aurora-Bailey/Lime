@@ -1,4 +1,26 @@
 class Lib {
+    static randString(length, lower, upper, numbers){
+        var text = "";
+        var possible = "";
+        var possLower = 'abcdefghijklmnopqrstuvwxyz';
+        var possUpper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        var possNum = '0123456789';
+
+        if(lower)
+            possible += possLower;
+        if(upper)
+            possible += possUpper;
+        if(numbers)
+            possible += posNum;
+
+        for( var i=0; i < length; i++ )
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return text;
+    }
+
+
+
     // Takes an object (obj.a = 10 obj.b = 20 etc...) returns the random key (b)
     static weightedRandom(obj){
         var total = 0;

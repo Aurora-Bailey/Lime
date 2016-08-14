@@ -17,6 +17,7 @@ gulp.task('es6', function() {
             presets: ['es2015']
         }))
         .pipe(order([
+            "globalvar.js",
             "prototypes.js",
             "lib.js",
             "main.js",

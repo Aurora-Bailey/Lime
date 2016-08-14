@@ -1,6 +1,8 @@
 'use strict';
 
-global.__DEV = true;
+var __DEV = true,
+    version = 0.001,
+    compatible = '9ICXM7PGXJ';
 
 var cluster = require('cluster'),
     nodesPerCore = 1,
@@ -17,7 +19,7 @@ if (cluster.isMaster) {
 
     // Create net server at master
     var netServer = require('net').createServer({pauseOnConnect:true}, function(c) {
-        var r = Math.floor( Math.random()*workers.length );
+        var r = 0;//Math.floor( Math.random()*workers.length );
         workers[r].send("doit",c);
     }).listen(masterPort);
 } else {
@@ -44,34 +46,74 @@ if (cluster.isMaster) {
         };
         ws.on('message', function incoming(data) {
             try{
-                console.log(typeof data);
-                var d = JSON.parse(data);
-
-                if (d.m == 'load') {
-                    Game.artificioalLoad = parseInt(d.v);
-                    ws.sendObj({load: Game.artificioalLoad});
-                }
-
-                if (d.m == 'get') {
-                    ws.sendObj(Game.getServerLoad(true));
-                }
-
-                if (d.m == 'ping') {
-                    ws.sendObj(d);
-                }
-
-                if (d.m == 'server') {
-                    ws.sendObj({v: WORKER_INDEX});
-                }
                 if (__DEV)
                     console.log(Date.now() + '->in:', data);
 
+                var d = JSON.parse(data);
 
+                if(typeof d[0] !== 'undefined'){
+                    console.log('array');
+                    Game.players[ws.playerId].asdf = 'qwerty';
+                    if(d[0] == 2){// player input
+                        if(d[1] != 0)
+                            Game.players[ws.playerId].direction = (parseInt(d[1]) / 1000) - Math.PI;
 
+                        if(d[2] != 0)
+                            Game.players[ws.playerId].thruster = parseInt(d[2]);
+
+                        if(d[3] != 0)
+                            Game.players[ws.playerId].weapon = parseInt(d[3]);
+
+                        if(d[4] != 0)
+                            Game.players[ws.playerId].message = d[4];
+                    }
+
+                }else if(d.m == "start"){
+                    var tryId = Lib.randString(3, true, true, false);
+                    while(typeof Game.players[tryId] !== 'undefined'){
+                        tryId = Lib.randString(3, true, true, false);
+                    }
+                    ws.playerId = tryId;
+                    Game.players[tryId] = {
+                        ws: ws,
+                        connected: true,
+                        id: tryId,
+                        name: d.n,
+                        type: d.t,
+                        x: 0,
+                        y: 0,
+                        direction: 0,
+                        thruster: 2,
+                        weapon: 2,
+                        message: ''};
+
+                    ws.sendObj({m:'go', v: tryId});
+
+                }else if(d.m == 'compatible'){
+                    if(compatible == d.v){
+                        ws.sendObj({m: 'ready'});
+                    }else{
+                        ws.sendObj({m: 'compatible', v: false});
+                    }
+
+                }else if (d.m == 'load') {
+                    Game.artificioalLoad = parseInt(d.v);
+                    ws.sendObj({load: Game.artificioalLoad});
+                }else if (d.m == 'get') {
+                    ws.sendObj(Game.getServerLoad(true));
+                }else if (d.m == 'ping') {
+                    ws.sendObj(d);
+                }else if (d.m == 'server') {
+                    ws.sendObj({m:'server', v: WORKER_INDEX});
+                }
             }
             catch(err){
-                if (__DEV)console.log('Bad Packet: ', data);
+                if (__DEV)console.log('Bad Packet: ', data, err);
             }
+        });
+
+        ws.on('close', function(){
+            Game.players[ws.playerId].connected = false;
         });
 
         ws.sendObj({m: 'hi'});
@@ -94,6 +136,10 @@ if (cluster.isMaster) {
 // Game Loop
     class Game {
         static init() {
+            // Game data
+            this.players = {};
+
+
             // Tweakable
             this.loopDelay = 50;//20 ticks per second
 
@@ -177,4 +223,26 @@ if (cluster.isMaster) {
     }
     Game.init();
 
+}
+
+class Lib{
+    static randString(length, lower, upper, numbers){
+        var text = "";
+        var possible = "";
+        var possLower = 'abcdefghijklmnopqrstuvwxyz';
+        var possUpper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        var possNum = '0123456789';
+
+        if(lower)
+            possible += possLower;
+        if(upper)
+            possible += possUpper;
+        if(numbers)
+            possible += posNum;
+
+        for( var i=0; i < length; i++ )
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return text;
+    }
 }
