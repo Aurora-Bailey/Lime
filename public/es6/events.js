@@ -67,7 +67,7 @@ $(window).on('mousemove', function(e){
     var mouse = {X: e.clientX, Y: e.clientY};
     var screen = {W: $(window).width(), H: $(window).height()};
     var delta = {X: mouse.X - (screen.W / 2), Y: mouse.Y - (screen.H / 2)};
-    var rad = Math.atan2(delta.Y, delta.X) + Math.PI;
+    var rad = Math.atan2(delta.Y, delta.X);
     PO.tick.direction = Math.floor(rad * 1000);
     PO.tickchanged = true;
 });

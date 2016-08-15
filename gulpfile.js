@@ -33,7 +33,7 @@ gulp.task('js', ['es6'], function() {
         .pipe(order([
             "jquery.min.js",
             "jquery*.js",
-            "bootstrap*.js",
+            "pixi*.js",
             "main*.js",
             "**/*.js"
         ]))
