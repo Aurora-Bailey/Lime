@@ -165,7 +165,31 @@ var PO = new PlayerOutput();
 
 
 
+class GameClass{
+    constructor(){
 
+        // Core
+        this.center = {x: $(window).width() / 2, y: $(window).height() / 2};
+        this.renderer = PIXI.autoDetectRenderer(3000, 1500,{backgroundColor : 0x000000});
+        this.renderer.baseResolution = {width: renderer.width, height: renderer.height};
+        $('#maingame').append(renderer.view);
+
+        // Render Layers
+        this.render = {};
+        this.render.world = new PIXI.Container();
+        this.render.map = new PIXI.Container();
+        this.render.players = new PIXI.Container();
+        this.render.world.addChild(this.render.map);
+        this.render.world.addChild(this.render.players);
+
+        // Background for the map layer
+        this.render.backgroundImage = PIXI.Texture.fromImage('images/colorfog.jpg');
+        this.render.background = new PIXI.extras.TilingSprite(this.render.backgroundImage, 1000, 1000);
+        map.addChild(this.render.background);
+
+    }
+}
+var Game = new GameClass();
 
 
 
@@ -178,7 +202,7 @@ $('#maingame').append(renderer.view);
 // create the root of the scene graph
 var world = new PIXI.Container();
 var map = new PIXI.Container();
-var map_size = 100;
+var map_size = 80;
 var map_block = 200;
 var player = new PIXI.Container();
 world.addChild(map);
@@ -191,6 +215,8 @@ var tilingSprite = new PIXI.extras.TilingSprite(texture, map_block * map_size, m
 map.addChild(tilingSprite);
 
 //tilingSprite._width = 800;
+
+
 
 // create a new Sprite using the texture
 var ship = new PIXI.Graphics();
