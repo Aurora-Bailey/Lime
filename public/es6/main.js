@@ -174,6 +174,12 @@ class GameClass{
         this.renderer.baseResolution = {width: renderer.width, height: renderer.height};
         $('#maingame').append(renderer.view);
 
+        // Data
+        this.data = {};
+        this.data.config = {};
+        this.data.map = {};
+        this.data.players = {};
+
         // Render Layers
         this.render = {};
         this.render.world = new PIXI.Container();
@@ -186,6 +192,49 @@ class GameClass{
         this.render.backgroundImage = PIXI.Texture.fromImage('images/colorfog.jpg');
         this.render.background = new PIXI.extras.TilingSprite(this.render.backgroundImage, 1000, 1000);
         map.addChild(this.render.background);
+
+        // Draw functions
+        this.draw = {};
+        this.draw.map = function(){
+
+        };
+        this.draw.players = function(){
+
+        };
+
+
+        // Screen resizing
+        // Make the game window responsive
+        $(window).on('resize', ()=>{
+            var width = $(window).width();
+            var height = $(window).height();
+
+            this.center = {x: width / 2, y: height / 2};
+            this.renderer.resize(width, height);
+
+            var scale = {};
+            scale.w = width / this.renderer.baseResolution.width;
+            scale.h = height / this.renderer.baseResolution.height;
+            scale.largest = scale.w;
+            scale.smallest = scale.h;
+            scale.orentation = 'landscape';
+            if(scale.h > scale.w){
+                scale.largest = scale.h;
+                scale.smallest = scale.w;
+                scale.orentation = 'portrait';
+            }
+            scale.difference = scale.largest - scale.smallest;
+
+            this.render.world.scale.x = scale.largest;
+            this.render.world.scale.y =	scale.largest;
+            this.render.world.position.x = 0;
+            this.render.world.position.y = 0;
+            if(scale.orentation == 'portrait')
+                this.render.world.position.x -= (this.renderer.baseResolution.width * scale.difference) / 2;
+            else
+                this.render.world.position.y -= (this.renderer.baseResolution.height * scale.difference) / 2;
+        });
+        window.onresize();// trigger
 
     }
 }
