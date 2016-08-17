@@ -148,12 +148,12 @@ if (cluster.isMaster) {
 
             //Map
             this.mapConfig = {};
-            this.mapConfig.width = 80;//blocks
-            this.mapConfig.height = 80;//blocks
-            this.mapConfig.blank = 50;//percent of empty blocks
-            this.mapConfig.bonus = 5;//percent of bonus blocks
+            this.mapConfig.numBlocks = 80;
+            this.mapConfig.width = this.mapConfig.numBlocks;//blocks
+            this.mapConfig.height = this.mapConfig.numBlocks;//blocks
+            this.mapConfig.blank = 80;//percent of empty blocks
+            this.mapConfig.bonus = 1;//percent of bonus blocks
             this.mapConfig.units = 200;//how many units wide and high is a block
-            this.mapEmpty = [];
             this.map = [];
             for(var i=0; i<this.mapConfig.width; i++){
                 this.map[i] = [];
@@ -161,16 +161,15 @@ if (cluster.isMaster) {
                     var r = Math.random() * 100;
                     if (r < this.mapConfig.blank){
                         this.map[i][k] = 0;
-                        this.mapEmpty.push(this.map[i][k])
                     } else if (r < this.mapConfig.blank + this.mapConfig.bonus)
                         this.map[i][k] = 10 + Math.floor(Math.random() * 10);
                     else
-                        this.map[i][k] = Math.ceil(Math.random() * 7)
+                        this.map[i][k] = Math.ceil(Math.random() * 6)
                 }
             }
 
             // Tweakable
-            this.loopDelay = 50;//20 ticks per second
+            this.loopDelay = 1000/20;//20 ticks per second
 
             // Default
             this.lastLoop = Date.now();
@@ -300,8 +299,8 @@ if (cluster.isMaster) {
 
                 // Update location
                 if(this.players[key].thruster != 2){
-                    this.players[key].velocity.x += Math.cos(this.players[key].direction / 1000) * 0.8;
-                    this.players[key].velocity.y += Math.sin(this.players[key].direction / 1000) * 0.8;
+                    this.players[key].velocity.x += Math.cos(this.players[key].direction / 1000) * 1.5;
+                    this.players[key].velocity.y += Math.sin(this.players[key].direction / 1000) * 1.5;
                 }
                 if(this.players[key].thruster == 3){// 3 is when you click on and off in the same frame
                     this.players[key].thruster = 2;// register the click then unclick

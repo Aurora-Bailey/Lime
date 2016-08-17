@@ -38,6 +38,11 @@ class WebSocketClass {
                 }else if(d.m == 'ready'){
                     this.sendObj({m: 'start', n: PO.name, t: PO.type});
                 }else if(d.m == 'go'){
+                    Game.data.players.list = d.players;
+                    Game.data.myId = d.id;
+                    Game.data.map = d.map;
+                    Game.data.config.blocksize = d.block;
+                    Game.draw.map();
                     PO.ready = true;
                     $('#homepage').addClass('hide');
                     $('#maingame').removeClass('hide');
@@ -46,13 +51,21 @@ class WebSocketClass {
                     console.log(Date.now() - parseInt(d.v));
                 }
             }else{
-
-                var byteLength = d.byteLength;
                 var x = new Int8Array(d);
 
                 if(x[0] == 7){
                     var playerData = new Int16Array(d);
-                    console.log(playerData);
+                    var players = [];
+                    var singlePlayer = [];
+                    for(var i=2; i<playerData.length; i++){
+                        singlePlayer.push(playerData[i]);
+                        if(singlePlayer.length == playerData[1]){
+                            players.push(singlePlayer);
+                            singlePlayer = [];
+                        }
+                    }
+                    Game.data.players.tick = players;
+                    Game.draw.players();
                 }
 
             }
@@ -170,36 +183,112 @@ class GameClass{
 
         // Core
         this.center = {x: $(window).width() / 2, y: $(window).height() / 2};
-        this.renderer = PIXI.autoDetectRenderer(3000, 1500,{backgroundColor : 0x000000});
-        this.renderer.baseResolution = {width: renderer.width, height: renderer.height};
-        $('#maingame').append(renderer.view);
+        this.view = {x: 3000, y: 1500};
+        this.renderer = PIXI.autoDetectRenderer(this.view.x, this.view.y,{backgroundColor : 0x000000});
+        this.renderer.baseResolution = {width: this.renderer.width, height: this.renderer.height};
+        $('#maingame').append(this.renderer.view);
 
         // Data
         this.data = {};
         this.data.config = {};
-        this.data.map = {};
-        this.data.players = {};
+        this.data.map = [];
+        this.data.players = {tick: [], list: []};
+        this.data.myId = 0;
 
         // Render Layers
         this.render = {};
         this.render.world = new PIXI.Container();
-        this.render.map = new PIXI.Container();
-        this.render.players = new PIXI.Container();
-        this.render.world.addChild(this.render.map);
-        this.render.world.addChild(this.render.players);
+        this.render.camera = new PIXI.Container();
+        this.render.map = new PIXI.Graphics();
+        this.render.players = new PIXI.Graphics();
 
         // Background for the map layer
         this.render.backgroundImage = PIXI.Texture.fromImage('images/colorfog.jpg');
         this.render.background = new PIXI.extras.TilingSprite(this.render.backgroundImage, 1000, 1000);
-        map.addChild(this.render.background);
+
+        // Building the parent child tree
+        this.render.world.addChild(this.render.camera);
+        this.render.camera.addChild(this.render.background);
+        this.render.camera.addChild(this.render.map);
+        this.render.camera.addChild(this.render.players);
 
         // Draw functions
         this.draw = {};
-        this.draw.map = function(){
+        this.draw.map = ()=>{
+            var blocksize = this.data.config.blocksize;
+
+            this.render.background._width = blocksize * this.data.map.length;
+            this.render.background._height = blocksize * this.data.map.length;
+
+            this.render.map.clear();
+
+            this.data.map.forEach((element, index)=>{
+                element.forEach((e, i)=>{
+                    if(e != 0){
+                        var offset = {x: i * blocksize, y: index * blocksize};
+                        this.render.map.beginFill(this.color.numToColor(e));
+                        this.render.map.alpha = 1;
+                        this.render.map.lineStyle(6, 0xffffff, 1);
+                        this.render.map.moveTo(offset.x + 0, offset.y + 0);
+                        this.render.map.lineTo(offset.x + 0, offset.y + blocksize);
+                        this.render.map.lineTo(offset.x + blocksize, offset.y + blocksize);
+                        this.render.map.lineTo(offset.x + blocksize, offset.y + 0);
+                        this.render.map.lineTo(offset.x + 0, offset.y + 0);
+                        this.render.map.endFill();
+                    }
+
+                });
+            });
 
         };
-        this.draw.players = function(){
+        this.draw.players = ()=>{
+            var ship = {width: 40, height: 60};
+            var shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)};
+            var shipY = {point: 0, left: -(ship.width / 2), right: (ship.width / 2)};
 
+            this.render.players.clear();
+
+            this.data.players.tick.forEach((e,i)=>{
+                var offset = {x: e[1], y: e[2], r: e[3]/1000};
+
+                this.render.players.beginFill('0x00ff00');
+                this.render.players.alpha = 1;
+                this.render.players.lineStyle(6, 0xffffff, 1);
+                this.render.players.moveTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipX.left * Math.cos(offset.r) - shipY.left * Math.sin(offset.r)), offset.y  + (shipX.left * Math.sin(offset.r) + shipY.left * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipX.right * Math.cos(offset.r) - shipY.right * Math.sin(offset.r)), offset.y  + (shipX.right * Math.sin(offset.r) + shipY.right * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
+                this.render.players.endFill();
+
+                // Move camera if player is you
+                if(e[0] == this.data.myId){
+                    this.render.camera.position.x = -offset.x + Game.view.x / 2;
+                    this.render.camera.position.y = -offset.y + Game.view.y / 2;
+                }
+            });
+
+        };
+
+        // Color funcitons
+        this.color = {};
+        this.color.componentToHex = (c)=>{
+            var hex = c.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        };
+        this.color.rgbToHex = (r, g, b)=>{
+            return "0x" + this.color.componentToHex(r) + this.color.componentToHex(g) + this.color.componentToHex(b);
+        };
+        this.color.numToColor = (num)=>{
+            var colors = ['0xffffff','0x800080','0x0000ff','0x00ff00','0xffff00','0xe67e22','0xff0000'];
+
+            if(typeof colors[num] !== 'undefined')
+                return colors[num];
+            else{
+                return colors[0];
+            }
+        };
+        this.color.randHex = ()=>{
+            return this.color.rgbToHex(Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256));
         };
 
 
@@ -234,15 +323,21 @@ class GameClass{
             else
                 this.render.world.position.y -= (this.renderer.baseResolution.height * scale.difference) / 2;
         });
-        window.onresize();// trigger
+        $(window).trigger('resize');// trigger
 
+        this.animate();
+    }
+
+    animate(){
+        requestAnimationFrame(()=>{this.animate()});
+        this.renderer.render(this.render.world);
     }
 }
 var Game = new GameClass();
 
 
 
-
+/*
 var center = {x: $(window).width() / 2, y: $(window).height() / 2};
 var renderer = PIXI.autoDetectRenderer(3000, 1500,{backgroundColor : 0x000000});
 renderer.baseResolution = {width: renderer.width, height: renderer.height};
@@ -478,5 +573,6 @@ function rgbToHex(r, g, b) {
     return "0x" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
 function randHex(){
-    return rgbToHex(Math.floor(Math.random()*106) + 50, Math.floor(Math.random()*106) + 50, Math.floor(Math.random()*106) + 150);
+    return rgbToHex(Math.floor(Math.random()*256) + 0, Math.floor(Math.random()*256) + 0, Math.floor(Math.random()*256) + 0);
 }
+*/
