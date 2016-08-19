@@ -226,14 +226,26 @@ class GameClass{
                 element.forEach((e, i)=>{
                     if(e != 0){
                         var offset = {x: i * blocksize, y: index * blocksize};
-                        this.render.map.beginFill(this.color.numToColor(e));
+                        var border = 6;
+
+                        this.render.map.beginFill('0xffffff');
                         this.render.map.alpha = 1;
-                        this.render.map.lineStyle(6, 0xffffff, 1);
+                        this.render.map.lineStyle(0, 0xffffff, 1);
                         this.render.map.moveTo(offset.x + 0, offset.y + 0);
                         this.render.map.lineTo(offset.x + 0, offset.y + blocksize);
                         this.render.map.lineTo(offset.x + blocksize, offset.y + blocksize);
                         this.render.map.lineTo(offset.x + blocksize, offset.y + 0);
                         this.render.map.lineTo(offset.x + 0, offset.y + 0);
+                        this.render.map.endFill();
+
+                        this.render.map.beginFill(this.color.numToColor(e));
+                        this.render.map.alpha = 1;
+                        this.render.map.lineStyle(0, 0xffffff, 1);
+                        this.render.map.moveTo(offset.x + border, offset.y + border);
+                        this.render.map.lineTo(offset.x + border, offset.y + blocksize - border);
+                        this.render.map.lineTo(offset.x + blocksize - border, offset.y + blocksize -border);
+                        this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
+                        this.render.map.lineTo(offset.x + border, offset.y + border);
                         this.render.map.endFill();
                     }
 
@@ -246,12 +258,20 @@ class GameClass{
             var shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)};
             var shipY = {point: 0, left: -(ship.width / 2), right: (ship.width / 2)};
 
+            /*
+            var border = 8;
+            var shipInside = {width: ship.width - (border*2), height: ship.height - (border*2)};
+            var shipXInside = {point: (shipInside.height / 3) * 2, left: -(shipInside.height / 3), right: -(shipInside.height / 3)};
+            var shipYInside = {point: 0, left: -(shipInside.width / 2), right: (shipInside.width / 2)};
+            */
+
             this.render.players.clear();
 
             this.data.players.tick.forEach((e,i)=>{
                 var offset = {x: e[1], y: e[2], r: e[3]/1000};
 
-                this.render.players.beginFill('0x00ff00');
+
+                this.render.players.beginFill('0xff0000');
                 this.render.players.alpha = 1;
                 this.render.players.lineStyle(6, 0xffffff, 1);
                 this.render.players.moveTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
@@ -259,6 +279,17 @@ class GameClass{
                 this.render.players.lineTo(offset.x + (shipX.right * Math.cos(offset.r) - shipY.right * Math.sin(offset.r)), offset.y  + (shipX.right * Math.sin(offset.r) + shipY.right * Math.cos(offset.r)));
                 this.render.players.lineTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
                 this.render.players.endFill();
+
+                /*
+                this.render.players.beginFill('0xff0000');
+                this.render.players.alpha = 1;
+                this.render.players.lineStyle(0, 0xffffff, 1);
+                this.render.players.moveTo(offset.x + (shipXInside.point * Math.cos(offset.r) - shipYInside.point * Math.sin(offset.r)), offset.y  + (shipXInside.point * Math.sin(offset.r) + shipYInside.point * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipXInside.left * Math.cos(offset.r) - shipYInside.left * Math.sin(offset.r)), offset.y  + (shipXInside.left * Math.sin(offset.r) + shipYInside.left * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipXInside.right * Math.cos(offset.r) - shipYInside.right * Math.sin(offset.r)), offset.y  + (shipXInside.right * Math.sin(offset.r) + shipYInside.right * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipXInside.point * Math.cos(offset.r) - shipYInside.point * Math.sin(offset.r)), offset.y  + (shipXInside.point * Math.sin(offset.r) + shipYInside.point * Math.cos(offset.r)));
+                this.render.players.endFill();
+                */
 
                 // Move camera if player is you
                 if(e[0] == this.data.myId){
