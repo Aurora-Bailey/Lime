@@ -94,7 +94,7 @@ if (cluster.isMaster) {
                         thruster: 2,
                         topSpeed: 40,
                         weapon: 2,
-                        weaponSpeed: 1000/20,
+                        weaponSpeed: 1000/2,
                         weaponLockout: Date.now(),
                         weaponDistance: 1500,
                         message: ''};
@@ -349,13 +349,14 @@ if (cluster.isMaster) {
                     plY = this.players[key].y,
                     plR = this.players[key].direction/1000,
                     plCol = this.players[key].collisionPadding,
-                    blockSize = this.mapConfig.units,
                     collPoints = [
                         {x: plX - plCol, y: plY - plCol},
                         {x: plX + plCol, y: plY - plCol},
                         {x: plX + plCol, y: plY + plCol},
                         {x: plX - plCol, y: plY + plCol}
                     ];
+
+                let blockSize = this.mapConfig.units;
 
 
                 // check what is in the block at each point
@@ -529,6 +530,47 @@ if (cluster.isMaster) {
                         laser[4] = this.players[key].id;
 
 
+                        // Laser collision with block
+                        let blockSize = this.mapConfig.units;
+                        let smallestX = Math.floor((laser[0] < laser[2] ? laser[0] : laser[2]) / blockSize);
+                        let smallestY = Math.floor((laser[1] < laser[3] ? laser[1] : laser[3]) / blockSize);
+                        let largestX = Math.floor((laser[0] < laser[2] ? laser[2] : laser[0]) / blockSize);
+                        let largestY = Math.floor((laser[1] < laser[3] ? laser[3] : laser[1]) / blockSize);
+                        let blockHit = false;
+                        for(var x=smallestX; x<=largestX; x++){
+                            for(var y=smallestY; y<=largestY; y++){
+                                if(typeof  this.map[y] == 'undefined' || typeof this.map[y][x] == 'undefined'){
+                                    // out of bountd
+                                }else{
+                                    if(this.map[y][x] != 0){
+                                        // laser hit a non empty block
+                                        var blockPoints = [
+                                            {x: x * blockSize, y: y * blockSize},
+                                            {x: x * blockSize + blockSize, y: y * blockSize},
+                                            {x: x * blockSize + blockSize, y: y * blockSize + blockSize},
+                                            {x: x * blockSize, y: y * blockSize + blockSize}
+                                        ];
+                                        blockPoints.forEach((e,i)=>{
+                                            var e2 = blockPoints[(i+1) % blockPoints.length];
+                                            //basic line intersection
+                                            if(Lib.lineIntersects(e.x, e.y, e2.x, e2.y, laser[0], laser[1], laser[2], laser[3])){
+                                                // find the exact point of intersection
+                                                var q = Lib.lineIntersectsPoint(e.x, e.y, e2.x, e2.y, laser[0], laser[1], laser[2], laser[3]);
+                                                if(q.onLine1 == true && q.onLine2 == true){
+                                                    //cut the laser short
+                                                    laser[2] = q.x;
+                                                    laser[3] = q.y;
+                                                    blockHit = {x: x, y: y};
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        console.log(blockHit);
+
                         //check collision with block
                         //cut laser short on collision
                         //random 1/10 move block
@@ -613,6 +655,7 @@ class Lib{
         return text;
     }
 
+    // fast, true or false
     static lineIntersects(p0_x, p0_y, p1_x, p1_y, p2_x, p2_y, p3_x, p3_y){
         var s1_x, s1_y, s2_x, s2_y;
         s1_x = p1_x - p0_x;
@@ -629,6 +672,38 @@ class Lib{
 
         return false; // No collision
     }
+
+    // slow with more detail
+    static lineIntersectsPoint(line1StartX, line1StartY, line1EndX, line1EndY, line2StartX, line2StartY, line2EndX, line2EndY) {
+        // http://jsfiddle.net/justin_c_rounds/Gd2S2/
+        var denominator, a, b, numerator1, numerator2, result = {
+            x: null,
+            y: null,
+            onLine1: false,
+            onLine2: false
+        };
+
+        denominator = ((line2EndY - line2StartY) * (line1EndX - line1StartX)) - ((line2EndX - line2StartX) * (line1EndY - line1StartY));
+        if(denominator == 0)
+            return result;
+
+        a = line1StartY - line2StartY;
+        b = line1StartX - line2StartX;
+        numerator1 = ((line2EndX - line2StartX) * a) - ((line2EndY - line2StartY) * b);
+        numerator2 = ((line1EndX - line1StartX) * a) - ((line1EndY - line1StartY) * b);
+        a = numerator1 / denominator;
+        b = numerator2 / denominator;
+
+        result.x = line1StartX + (a * (line1EndX - line1StartX));
+        result.y = line1StartY + (a * (line1EndY - line1StartY));
+
+        if(a > 0 && a < 1)
+            result.onLine1 = true;
+        if(b > 0 && b < 1)
+            result.onLine2 = true;
+
+        return result;
+    };
 
     static distance(x1, y1, x2, y2){
         return Math.sqrt(Math.pow(x2-x1,2) + Math.pow(y2-y1,2));

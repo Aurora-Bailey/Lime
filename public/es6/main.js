@@ -343,13 +343,13 @@ class GameClass{
                 var owner = e[4];
                 var age = frameTime - e[5];
 
-                this.render.lasers.beginFill('0xff0000');
-                this.render.lasers.alpha = (1 - age/laserTimeout) * 0.5;
-                this.render.lasers.lineStyle(10, 0xffffff, 1);
+                //this.render.lasers.beginFill('0xff0000');
+                //this.render.lasers.alpha = (1 - age/laserTimeout) * 0.9;
+                this.render.lasers.lineStyle((1 - age/laserTimeout) * 10, 0xffffff, 1);
                 this.render.lasers.moveTo(offset.x1 , offset.y1);
                 this.render.lasers.lineTo(offset.x2, offset.y2);
-                this.render.lasers.lineTo(offset.x1, offset.y1);
-                this.render.lasers.endFill();
+                //this.render.lasers.lineTo(offset.x1, offset.y1);
+                //this.render.lasers.endFill();
             });
 
         };
