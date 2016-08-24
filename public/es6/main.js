@@ -198,9 +198,11 @@ var PO = new PlayerOutput();
 class GameClass{
     constructor(){
 
+
         // Core
         this.center = {x: $(window).width() / 2, y: $(window).height() / 2};
-        this.view = {x: 2000, y: 1000};
+        this.view = {x: 2000, y: 1000};// will be overwritten by game.zoom
+        this.zoomLevel = 4;
         this.renderer = PIXI.autoDetectRenderer(this.view.x, this.view.y,{backgroundColor : 0x000000});
         this.renderer.baseResolution = {width: this.renderer.width, height: this.renderer.height};
         $('#maingame').append(this.renderer.view);
@@ -406,10 +408,38 @@ class GameClass{
             else
                 this.render.world.position.y -= (this.renderer.baseResolution.height * scale.difference) / 2;
         });
-        $(window).trigger('resize');// trigger
+        this.zoom(this.zoomLevel);// default zoom
+        //$(window).trigger('resize');// trigger
 
         this.animate();
     }
+
+    zoom(x){
+        if(x == 1){
+            this.renderer.baseResolution.width = 1500;
+            this.renderer.baseResolution.height = 750;
+            this.view.x = 1500;
+            this.view.y = 750;
+        }else if(x == 2){
+            this.renderer.baseResolution.width = 2000;
+            this.renderer.baseResolution.height = 1000;
+            this.view.x = 2000;
+            this.view.y = 1000;
+        }else if(x == 3){
+            this.renderer.baseResolution.width = 2500;
+            this.renderer.baseResolution.height = 1250;
+            this.view.x = 2500;
+            this.view.y = 1250;
+        }else {
+            this.renderer.baseResolution.width = 3000;
+            this.renderer.baseResolution.height = 1500;
+            this.view.x = 3000;
+            this.view.y = 1500;
+        }
+        this.zoomLevel = x;
+        $(window).trigger('resize');
+    }
+
 
     animate(){
         requestAnimationFrame(()=>{this.animate()});

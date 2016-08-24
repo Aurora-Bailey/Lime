@@ -94,7 +94,7 @@ if (cluster.isMaster) {
                         thruster: 2,
                         topSpeed: 40,
                         weapon: 2,
-                        weaponSpeed: 250,
+                        weaponSpeed: 1000/20,
                         weaponLockout: Date.now(),
                         weaponDistance: 1500,
                         message: ''};
@@ -345,118 +345,125 @@ if (cluster.isMaster) {
                 this.players[key].y += this.players[key].velocity.y;
 
                 // Check collisiton with blocks
-                var qStart = Date.now();
-                var q = 0;
-                while(q <1){
-
-                    var plX = this.players[key].x,
-                        plY = this.players[key].y,
-                        plR = this.players[key].direction/1000,
-                        plCol = this.players[key].collisionPadding,
-                        blockSize = this.mapConfig.units,
-                        collPoints = [
-                            {x: plX - plCol, y: plY - plCol},
-                            {x: plX + plCol, y: plY - plCol},
-                            {x: plX + plCol, y: plY + plCol},
-                            {x: plX - plCol, y: plY + plCol}
-                        ];
+                var plX = this.players[key].x,
+                    plY = this.players[key].y,
+                    plR = this.players[key].direction/1000,
+                    plCol = this.players[key].collisionPadding,
+                    blockSize = this.mapConfig.units,
+                    collPoints = [
+                        {x: plX - plCol, y: plY - plCol},
+                        {x: plX + plCol, y: plY - plCol},
+                        {x: plX + plCol, y: plY + plCol},
+                        {x: plX - plCol, y: plY + plCol}
+                    ];
 
 
-                    // check what is in the block at each point
-                    // collision is possible if a block is not empty
-                    // this only works because the ship is smaller than the block
-                    collPoints.forEach((e,i)=>{
-                        var xToCell = Math.floor(e.x / blockSize),
-                            yToCell = Math.floor(e.y / blockSize);
+                // check what is in the block at each point
+                // collision is possible if a block is not empty
+                // this only works because the ship is smaller than the block
+                collPoints.forEach((e,i)=>{
+                    var xToCell = Math.floor(e.x / blockSize),
+                        yToCell = Math.floor(e.y / blockSize);
 
-                        if(typeof this.map[yToCell] == 'undefined' || typeof this.map[yToCell][xToCell] == 'undefined'){
-                            //console.log('Possible out of bounds');
-                        }else if(this.map[yToCell][xToCell] != 0){
-                            //Possible collision, finer calculation needed.
-                            var ship = {width: this.players[key].dimensions.w, height: this.players[key].dimensions.h},
-                                shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)},
-                                shipY = {point: 0, left: -(ship.width / 2), right: (ship.width / 2)},
-                                blockPoints = [
-                                    {x: xToCell * blockSize, y: yToCell * blockSize},
-                                    {x: xToCell * blockSize + blockSize, y: yToCell * blockSize},
-                                    {x: xToCell * blockSize + blockSize, y: yToCell * blockSize + blockSize},
-                                    {x: xToCell * blockSize, y: yToCell * blockSize + blockSize}
-                                ],
-                                collision = true,
-                                intersecting = [false,false,false,false];
+                    if(typeof this.map[yToCell] == 'undefined' || typeof this.map[yToCell][xToCell] == 'undefined'){
+                        //console.log('Possible out of bounds');
+                        while(this.players[key].x <= 0){
+                            this.players[key].x++;
+                            this.players[key].velocity.x = 0;
+                        }
+                        while(this.players[key].x >= this.mapConfig.numBlocks * this.mapConfig.units){
+                            this.players[key].x--;
+                            this.players[key].velocity.x = 0;
+                        }
+                        while(this.players[key].y <= 0){
+                            this.players[key].y++;
+                            this.players[key].velocity.y = 0;
+                        }
+                        while(this.players[key].y >= this.mapConfig.numBlocks * this.mapConfig.units){
+                            this.players[key].y--;
+                            this.players[key].velocity.y = 0;
+                        }
+                    }else if(this.map[yToCell][xToCell] != 0){
+                        //Possible collision, finer calculation needed.
+                        var ship = {width: this.players[key].dimensions.w, height: this.players[key].dimensions.h},
+                            shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)},
+                            shipY = {point: 0, left: -(ship.width / 2), right: (ship.width / 2)},
+                            blockPoints = [
+                                {x: xToCell * blockSize, y: yToCell * blockSize},
+                                {x: xToCell * blockSize + blockSize, y: yToCell * blockSize},
+                                {x: xToCell * blockSize + blockSize, y: yToCell * blockSize + blockSize},
+                                {x: xToCell * blockSize, y: yToCell * blockSize + blockSize}
+                            ],
+                            collision = true,
+                            intersecting = [false,false,false,false];
 
-                            while(collision == true){
-                                collision = false;
+                        while(collision == true){
+                            collision = false;
 
-                                plX = this.players[key].x;
-                                plY = this.players[key].y;
+                            plX = this.players[key].x;
+                            plY = this.players[key].y;
 
-                                var shipPoints = [
-                                    {x: plX + (shipX.point * Math.cos(plR) - shipY.point * Math.sin(plR)), y: plY  + (shipX.point * Math.sin(plR) + shipY.point * Math.cos(plR))},
-                                    {x: plX + (shipX.left * Math.cos(plR) - shipY.left * Math.sin(plR)), y: plY  + (shipX.left * Math.sin(plR) + shipY.left * Math.cos(plR))},
-                                    {x: plX + (shipX.right * Math.cos(plR) - shipY.right * Math.sin(plR)), y: plY  + (shipX.right * Math.sin(plR) + shipY.right * Math.cos(plR))}
-                                ];
+                            var shipPoints = [
+                                {x: plX + (shipX.point * Math.cos(plR) - shipY.point * Math.sin(plR)), y: plY  + (shipX.point * Math.sin(plR) + shipY.point * Math.cos(plR))},
+                                {x: plX + (shipX.left * Math.cos(plR) - shipY.left * Math.sin(plR)), y: plY  + (shipX.left * Math.sin(plR) + shipY.left * Math.cos(plR))},
+                                {x: plX + (shipX.right * Math.cos(plR) - shipY.right * Math.sin(plR)), y: plY  + (shipX.right * Math.sin(plR) + shipY.right * Math.cos(plR))}
+                            ];
 
-                                shipPoints.forEach((element,index)=>{
-                                    var x1 = shipPoints[index].x;
-                                    var y1 = shipPoints[index].y;
-                                    var i2 = (index + 1) % shipPoints.length;
-                                    var x2 = shipPoints[i2].x;
-                                    var y2 = shipPoints[i2].y;
+                            shipPoints.forEach((element,index)=>{
+                                var x1 = shipPoints[index].x;
+                                var y1 = shipPoints[index].y;
+                                var i2 = (index + 1) % shipPoints.length;
+                                var x2 = shipPoints[i2].x;
+                                var y2 = shipPoints[i2].y;
 
-                                    blockPoints.forEach((ele, ind)=>{
-                                        var x3 = blockPoints[ind].x;
-                                        var y3 = blockPoints[ind].y;
-                                        var i3 = (ind + 1) % blockPoints.length;
-                                        var x4 = blockPoints[i3].x;
-                                        var y4 = blockPoints[i3].y;
+                                blockPoints.forEach((ele, ind)=>{
+                                    var x3 = blockPoints[ind].x;
+                                    var y3 = blockPoints[ind].y;
+                                    var i3 = (ind + 1) % blockPoints.length;
+                                    var x4 = blockPoints[i3].x;
+                                    var y4 = blockPoints[i3].y;
 
-                                        if(Lib.lineIntersects(x1,y1,x2,y2,x3,y3,x4,y4)){
-                                            intersecting[ind] = true;
-                                            collision = true;
-                                        }
-                                    });
-
+                                    if(Lib.lineIntersects(x1,y1,x2,y2,x3,y3,x4,y4)){
+                                        intersecting[ind] = true;
+                                        collision = true;
+                                    }
                                 });
 
-                                //console.log(intersecting);
+                            });
+
+                            //console.log(intersecting);
 
 
-                                //Collision logic
-                                if(intersecting[0]){
-                                    this.players[key].y -= 1;
-                                    if(this.players[key].velocity.y >= 0)
-                                        this.players[key].velocity.y = 0;// remove velocity
-                                }
-                                if(intersecting[2]){
-                                    this.players[key].y += 1;
-                                    if(this.players[key].velocity.y <= 0)
-                                        this.players[key].velocity.y = 0;// remove velocity
-                                }
-
-                                if(intersecting[1]){
-                                    this.players[key].x += 1;
-                                    if(this.players[key].velocity.x <= 0)
-                                        this.players[key].velocity.x = 0;// remove velocity
-                                }
-                                if(intersecting[3]){
-                                    this.players[key].x -= 1;
-                                    if(this.players[key].velocity.x >= 0)
-                                        this.players[key].velocity.x = 0;// remove velocity
-                                }
-
-
+                            //Collision logic
+                            if(intersecting[0]){
+                                this.players[key].y -= 1;
+                                if(this.players[key].velocity.y >= 0)
+                                    this.players[key].velocity.y = 0;// remove velocity
+                            }
+                            if(intersecting[2]){
+                                this.players[key].y += 1;
+                                if(this.players[key].velocity.y <= 0)
+                                    this.players[key].velocity.y = 0;// remove velocity
                             }
 
-                            //console.log('collision possible');
+                            if(intersecting[1]){
+                                this.players[key].x += 1;
+                                if(this.players[key].velocity.x <= 0)
+                                    this.players[key].velocity.x = 0;// remove velocity
+                            }
+                            if(intersecting[3]){
+                                this.players[key].x -= 1;
+                                if(this.players[key].velocity.x >= 0)
+                                    this.players[key].velocity.x = 0;// remove velocity
+                            }
+
+
                         }
-                    });
 
+                        //console.log('collision possible');
+                    }
+                });
 
-
-                    q++;
-                }
-                //console.log(Date.now() - qStart);
             }
 
             // Send player location data
@@ -520,6 +527,17 @@ if (cluster.isMaster) {
                         laser[3] = this.players[key].y + Math.sin(this.players[key].direction / 1000) * this.players[key].weaponDistance;
 
                         laser[4] = this.players[key].id;
+
+
+                        //check collision with block
+                        //cut laser short on collision
+                        //random 1/10 move block
+
+                        //check collision with player
+                        //cut laser short on collision
+                        //remove health from player / check death / recalculate points / recalculate topcharts
+
+
 
                         laserList.push(laser);
                     }
