@@ -38,8 +38,20 @@ if (cluster.isMaster) {
     });
 
     wss.on('connection', function connection(ws) {
+        ws.connected = true;
         ws.sendObj = function (obj) {
-            ws.send(JSON.stringify(obj));
+            try{
+                ws.send(JSON.stringify(obj));
+            }catch(err){
+                console.log(err);
+            }
+        };
+        ws.sendBinary = function(data){
+            try{
+                ws.send(data, {binary: true});
+            }catch(err){
+                console.log(err);
+            }
         };
         ws.on('message', function incoming(data) {
             try{
@@ -103,6 +115,17 @@ if (cluster.isMaster) {
                         ws.sendObj({m: 'compatible', v: false});
                     }
 
+                }else if(d.m == 'respawn'){
+                    if(typeof ws.playerId !== 'undefined' && typeof Game.players['p' + ws.playerId] !== 'undefined' && Game.players['p' + ws.playerId].health == 0){
+
+                        // Respawn
+                        var emptyBlock = Game.getMapEmpty();
+                        Game.players['p' + ws.playerId].x = emptyBlock.x * Game.mapConfig.units + (Game.mapConfig.units/2);
+                        Game.players['p' + ws.playerId].y = emptyBlock.y * Game.mapConfig.units + (Game.mapConfig.units/2);
+                        Game.players['p' + ws.playerId].health = 100;
+                        Game.players['p' + ws.playerId].velocity.x = 0;
+                        Game.players['p' + ws.playerId].velocity.y = 0;
+                    }
                 }else if (d.m == 'get') {
                     ws.sendObj(Game.getServerLoad(true));
                 }else if (d.m == 'ping') {
@@ -117,11 +140,13 @@ if (cluster.isMaster) {
         });
 
         ws.on('close', function(){
+            ws.connected = false;
+            if(typeof ws.playerId == 'undefined' || typeof Game.players['p' + ws.playerId] == 'undefined') return false;
+
             Game.players['p' + ws.playerId].connected = false;
             if(Game.players['p' + ws.playerId].health == 0){
                 Game.removePlayer(ws.playerId);
             }
-
         });
 
         ws.sendObj({m: 'hi'});
@@ -129,7 +154,13 @@ if (cluster.isMaster) {
 
     wss.broadcast = function broadcast(data) {
         wss.clients.forEach(function each(client) {
-            client.send(data);
+            try{
+                if(client.connected)
+                    client.send(data);
+            }catch(err){
+                console.log(err);
+            }
+
         });
     };
 
@@ -601,20 +632,12 @@ if (cluster.isMaster) {
                                 this.players['p' + playerHit].thruster = 2;
                                 this.players['p' + playerHit].lastActive = Date.now();
                                 if(this.players['p' + playerHit].connected)
-                                    this.players['p' + playerHit].ws.send(JSON.stringify({m: 'dead'}));
-                                /*respawn
-                                var emptyBlock = this.getMapEmpty();
-                                this.players['p' + playerHit].x = emptyBlock.x * this.mapConfig.units + (this.mapConfig.units/2);
-                                this.players['p' + playerHit].y = emptyBlock.y * this.mapConfig.units + (this.mapConfig.units/2);
-                                this.players['p' + playerHit].health = 100;
-                                this.players['p' + playerHit].velocity.x = 0;
-                                this.players['p' + playerHit].velocity.y = 0;
-                                */
+                                    this.players['p' + playerHit].ws.sendObj({m: 'dead'});
 
                                 // set killers health to full
                                 this.players[key].health = 100;
                                 if(this.players[key].connected)
-                                    this.players[key].ws.send(JSON.stringify({m: 'killed', v: this.players['p' + playerHit].name}));
+                                    this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
 
                                 // remove dc players on death
                                 if(this.players['p' + playerHit].connected == false){
@@ -652,7 +675,7 @@ if (cluster.isMaster) {
                     }
                 });
                 if (this.players[key].connected && dataToSend.length > 0)
-                    this.players[key].ws.send(this.sendDataToBinary(7, dataToSend, 16), {binary: true});
+                    this.players[key].ws.sendBinary(this.sendDataToBinary(7, dataToSend, 16));
 
                 // Lasers
                 let lasersToSend = [];
@@ -664,7 +687,7 @@ if (cluster.isMaster) {
                     }
                 });
                 if(this.players[key].connected && lasersToSend.length > 0)
-                    this.players[key].ws.send(this.sendDataToBinary(8, lasersToSend, 16), {binary: true});
+                    this.players[key].ws.sendBinary(this.sendDataToBinary(8, lasersToSend, 16));
 
             }
 
@@ -674,12 +697,9 @@ if (cluster.isMaster) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
                 if(this.players[key].connected && blocksChanged.length > 0)
-                    this.players[key].ws.send(this.sendDataToBinary(9, blocksChanged, 16), {binary: true});
+                    this.players[key].ws.sendBinary(this.sendDataToBinary(9, blocksChanged, 16));
 
             }
-
-
-
 
 
 
@@ -707,12 +727,13 @@ if (cluster.isMaster) {
             // Executes one per game minute
             if (this.loopCount % (60000 / this.loopDelay) == 0) {
 
-                // Kick player if they have been dead for 15 minutes
+                // Kick player if they have been dead for 10 minutes
                 var curDate = Date.now();
                 for(let key in this.players) {
                     if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
                     if(curDate - this.players[key].lastActive > 600000 && this.players[key].connected && this.players[key].health == 0){
-                        this.players[key].ws.send(JSON.stringify({m: 'timeout', v: curDate}));
+                        this.players[key].ws.sendObj({m: 'timeout', v: curDate});
+                        this.players[key].ws.connected = false;
                         this.players[key].ws.close();
                     }
                 }

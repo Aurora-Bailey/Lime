@@ -7,6 +7,19 @@ $('.type-button').on('click', function(){
     WS.startWebSocket();
 });
 
+$('#respawn-button').on('click', function(){
+    if(WS.connected){
+        WS.server.send(JSON.stringify({m: 'respawn'}));
+    }
+    $('#respawn').addClass('hide');
+});
+$('#respawn-leave').on('click', function(){
+    if(WS.connected){
+        WS.server.close();
+    }
+    $('#respawn').addClass('hide');
+});
+
 
 $(window).on('mousedown', function(e){
     if(!PO.ready)return true;

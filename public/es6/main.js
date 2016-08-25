@@ -52,7 +52,8 @@ class WebSocketClass {
                 }else if(d.m == "ping"){
                     console.log(Date.now() - parseInt(d.v));
                 }else if(d.m == "dcplayer"){
-                    delete Game.data.players.list['p' + d.v];
+                    if(typeof Game.data.players.list['p' + d.v] !== 'undefined')
+                        delete Game.data.players.list['p' + d.v];
                 }else if(d.m == "newplayer"){
                     Game.data.players.list['p' + d.v.id] = d.v;
                 }
@@ -305,7 +306,7 @@ class GameClass{
             });
 
             this.data.players.tick.forEach((e,i)=>{
-                //if(e[4] == 0) return false;
+                if(e[4] == 0) return false;// skip dead players
 
                 var offset = {x: e[1], y: e[2], r: e[3]/1000};
                 var id = e[0];
