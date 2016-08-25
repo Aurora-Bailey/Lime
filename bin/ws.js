@@ -40,37 +40,30 @@ if (cluster.isMaster) {
     wss.on('connection', function connection(ws) {
         ws.sendObj = function (obj) {
             ws.send(JSON.stringify(obj));
-
-            if (__DEV)
-                console.log(Date.now() + '<-out:', JSON.stringify(obj));
         };
         ws.on('message', function incoming(data) {
             try{
-                if (__DEV)
-                    console.log(Date.now() + '->in:', data);
-
                 var d = JSON.parse(data);
 
                 if(typeof d[0] !== 'undefined'){
-                    if(d[0] == 2){// player input
-                        if(d[1] != 0)
-                            Game.players['p' + ws.playerId].direction = parseInt(d[1]);
-
-                        if(d[2] != 0)
-                            Game.players['p' + ws.playerId].thruster = parseInt(d[2]);
-
-                        if(d[3] != 0)
-                            Game.players['p' + ws.playerId].weapon = parseInt(d[3]);
-
+                    if(d[0] == 2 && typeof ws.playerId != 'undefined'){// player input
+                        if(Game.players['p' + ws.playerId].health != 0){
+                            if(d[1] != 0)
+                                Game.players['p' + ws.playerId].direction = parseInt(d[1]);
+                            if(d[2] != 0)
+                                Game.players['p' + ws.playerId].thruster = parseInt(d[2]);
+                            if(d[3] != 0)
+                                Game.players['p' + ws.playerId].weapon = parseInt(d[3]);
+                        }
                         if(d[4] != 0)
                             Game.players['p' + ws.playerId].message = d[4];
                     }
 
                 }else if(d.m == "start"){
                     var emptySpot = Game.getMapEmpty();
-                    var tryId = Lib.randString(3, false, false, true);
+                    var tryId = Lib.randString(4, false, false, true);
                     while(typeof Game.players['p' + tryId] !== 'undefined'){
-                        tryId = Lib.randString(3, false, false, true);
+                        tryId = Lib.randString(4, false, false, true);
                     }
                     tryId = parseInt(tryId);
                     ws.playerId = tryId;
@@ -81,26 +74,27 @@ if (cluster.isMaster) {
                         collisionPadding: 40, // distance from center point to start collision detection
                         velocity: {x: 0, y: 0},
                         rank: 0,
-                        color: 3,
+                        color: Math.ceil(Math.random() * 6),
                         level: 0,
                         health: 100,
                         connected: true,
                         id: tryId,
                         name: d.n,
                         type: d.t,
-                        x: (emptySpot.x * Game.mapConfig.units) + (Game.mapConfig.units / 2),
-                        y: (emptySpot.y * Game.mapConfig.units) + (Game.mapConfig.units / 2),
+                        x: 100,//(emptySpot.x * Game.mapConfig.units) + (Game.mapConfig.units / 2),
+                        y: 100, //(emptySpot.y * Game.mapConfig.units) + (Game.mapConfig.units / 2),
                         direction: 0,
                         thruster: 2,
                         topSpeed: 40,
                         weapon: 2,
-                        weaponSpeed: 1000/2,
+                        weaponSpeed: 1000/6,
                         weaponLockout: Date.now(),
                         weaponDistance: 1500,
+                        weaponDamage: 30,
+                        lastActive: Date.now(),
                         message: ''};
-
-                    console.log(Game.players);
                     ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map});
+                    wss.broadcast(JSON.stringify({m: 'newplayer', v: Game.getSinglePlayer(tryId)}));
 
                 }else if(d.m == 'compatible'){
                     if(compatible == d.v){
@@ -109,9 +103,6 @@ if (cluster.isMaster) {
                         ws.sendObj({m: 'compatible', v: false});
                     }
 
-                }else if (d.m == 'load') {
-                    Game.artificioalLoad = parseInt(d.v);
-                    ws.sendObj({load: Game.artificioalLoad});
                 }else if (d.m == 'get') {
                     ws.sendObj(Game.getServerLoad(true));
                 }else if (d.m == 'ping') {
@@ -127,10 +118,20 @@ if (cluster.isMaster) {
 
         ws.on('close', function(){
             Game.players['p' + ws.playerId].connected = false;
+            if(Game.players['p' + ws.playerId].health == 0){
+                Game.removePlayer(ws.playerId);
+            }
+
         });
 
         ws.sendObj({m: 'hi'});
     });
+
+    wss.broadcast = function broadcast(data) {
+        wss.clients.forEach(function each(client) {
+            client.send(data);
+        });
+    };
 
     server.on('request', app);
     server.listen(gamePort, function () {
@@ -193,24 +194,39 @@ if (cluster.isMaster) {
             this.serverLoad.high = 0;
             this.serverLoad.low = 0;
 
-            this.artificioalLoad = 10;
-
             // Start the game loop
             this.loop();
         }
 
-        static getPlayers(){
-            var x = [];
+        static removePlayer(id){
+            // delete player from server
+            delete this.players['p' + id];
+            // delete player from client
+            wss.broadcast(JSON.stringify({m: 'dcplayer', v: id}));
+        }
+
+        static getPlayers(){// name type etc..
+            var x = {};
             for(var key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
-                x.push({
+                x['p' + this.players[key].id] = {
                     id: this.players[key].id,
                     name: this.players[key].name,
                     type: this.players[key].type,
                     color: this.players[key].color,
-                    rank: this.players[key].rank})
+                    rank: this.players[key].rank
+                };
             }
             return x;
+        }
+        static getSinglePlayer(id){
+            return {
+                id: this.players['p' + id].id,
+                name: this.players['p' + id].name,
+                type: this.players['p' + id].type,
+                color: this.players['p' + id].color,
+                rank: this.players['p' + id].rank
+            };
         }
 
         static playerSendData(){//id xyd health level
@@ -227,44 +243,31 @@ if (cluster.isMaster) {
             }
             return x;
         }
-        static playerSendDataToBinary(sendData){
-            var length = sendData.length * sendData[0].length;
+
+        static sendDataToBinary(idNum, arrayOfIntArrays, bitSize){
+
+            if(arrayOfIntArrays.length < 1 || arrayOfIntArrays[0].length < 1){
+                var ifFalse = new Int8Array(1);
+                ifFalse[0] = 0;
+                return ifFalse;
+            }
+
+            var length = arrayOfIntArrays.length * arrayOfIntArrays[0].length;
 
             length += 2; // for type and array length
 
             var x = new Int16Array(length);
+            if(bitSize == 8) x = new Int8Array(length);
+            if(bitSize == 32) x = new Int32Array(length);
 
-            x[0] = 7;// type of packet, 7=player location data
-            x[1] = sendData[0].length;// length of each element in array
-
-            var cursor = 2;
-
-            sendData.forEach(function(element, index){
-                sendData[index].forEach(function(e,i){
-                    x[cursor] = sendData[index][i];
-                    cursor++;
-                });
-            });
-
-            return x;
-        }
-        static laserSendDataToBinary(sendData){
-            if(sendData.length < 1) return false;
-
-            var length = sendData.length * sendData[0].length;
-
-            length += 2; // for type and array length
-
-            var x = new Int16Array(length);
-
-            x[0] = 8;// type of packet, 8=laser
-            x[1] = sendData[0].length;// length of each element in array
+            x[0] = idNum;// type of packet, 8=laser
+            x[1] = arrayOfIntArrays[0].length;// length of each element in array
 
             var cursor = 2;
 
-            sendData.forEach(function(element, index){
-                sendData[index].forEach(function(e,i){
-                    x[cursor] = sendData[index][i];
+            arrayOfIntArrays.forEach(function(element, index){
+                arrayOfIntArrays[index].forEach(function(e,i){
+                    x[cursor] = arrayOfIntArrays[index][i];
                     cursor++;
                 });
             });
@@ -313,12 +316,6 @@ if (cluster.isMaster) {
                 this.lastSecond = tickDate;
             }
 
-            // Artificial load
-            var i = 0;
-            while (i < this.artificioalLoad) {
-                i++
-            }
-
             // Main Code
 
             //Update player location
@@ -332,8 +329,6 @@ if (cluster.isMaster) {
                     this.players[key].velocity.x += Math.cos(this.players[key].direction / 1000) * (2 * (1 - oldSpeed / this.players[key].topSpeed));
                     this.players[key].velocity.y += Math.sin(this.players[key].direction / 1000) * (2 * (1 - oldSpeed / this.players[key].topSpeed));
 
-                    console.log(Math.abs(Lib.distance(0,0,this.players[key].velocity.x,this.players[key].velocity.y)));
-
                     if(this.players[key].thruster == 3){// 3 is when you click on and off in the same frame
                         this.players[key].thruster = 2;// register the click then unclick
                     }
@@ -345,7 +340,7 @@ if (cluster.isMaster) {
                 this.players[key].y += this.players[key].velocity.y;
 
                 // Check collisiton with blocks
-                var plX = this.players[key].x,
+                let plX = this.players[key].x,
                     plY = this.players[key].y,
                     plR = this.players[key].direction/1000,
                     plCol = this.players[key].collisionPadding,
@@ -467,52 +462,9 @@ if (cluster.isMaster) {
 
             }
 
-            // Send player location data
-            var masterPlayerData = this.playerSendData();// data about players to be sent to players
-            for(let key in this.players) {
-                if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
-
-                // Check players in view
-                var screen = {};
-                screen.top = this.players[key].y - this.players[key].view.h / 2;
-                screen.left = this.players[key].x - this.players[key].view.w / 2;
-                screen.right = this.players[key].x + this.players[key].view.w / 2;
-                screen.bottom = this.players[key].y + this.players[key].view.h / 2;
-
-                var playerDataCopy = Lib.deepCopy(masterPlayerData);
-                for (var k = 0; k < playerDataCopy.length; k++) {
-                    if (playerDataCopy[k][2] < screen.top) {
-                        playerDataCopy.splice(k, 1);
-                        k--;
-                    }
-                }
-                for (k = 0; k < playerDataCopy.length; k++) {
-                    if (playerDataCopy[k][2] > screen.bottom) {
-                        playerDataCopy.splice(k, 1);
-                        k--;
-                    }
-                }
-                for (k = 0; k < playerDataCopy.length; k++) {
-                    if (playerDataCopy[k][1] < screen.left) {
-                        playerDataCopy.splice(k, 1);
-                        k--;
-                    }
-                }
-                for (k = 0; k < playerDataCopy.length; k++) {
-                    if (playerDataCopy[k][1] > screen.right) {
-                        playerDataCopy.splice(k, 1);
-                        k--;
-                    }
-                }
-
-                //playerDataCopy now holds all the players in view
-                if (this.players[key].connected)
-                    this.players[key].ws.send(this.playerSendDataToBinary(playerDataCopy), {binary: true});
-
-            }
-
             // Make laser
             var laserList = [];
+            var blocksChanged = [];
             for(let key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
@@ -531,14 +483,17 @@ if (cluster.isMaster) {
 
 
                         // Laser collision with block
+                        //check collision with block
+                        //cut laser short on collision
+                        //random 1/10 move block
                         let blockSize = this.mapConfig.units;
-                        let smallestX = Math.floor((laser[0] < laser[2] ? laser[0] : laser[2]) / blockSize);
-                        let smallestY = Math.floor((laser[1] < laser[3] ? laser[1] : laser[3]) / blockSize);
-                        let largestX = Math.floor((laser[0] < laser[2] ? laser[2] : laser[0]) / blockSize);
-                        let largestY = Math.floor((laser[1] < laser[3] ? laser[3] : laser[1]) / blockSize);
+                        let smallestBlockX = Math.floor((laser[0] < laser[2] ? laser[0] : laser[2]) / blockSize);// simplified to block level coordinates
+                        let smallestBlockY = Math.floor((laser[1] < laser[3] ? laser[1] : laser[3]) / blockSize);
+                        let largestBlockX = Math.floor((laser[0] < laser[2] ? laser[2] : laser[0]) / blockSize);
+                        let largestBlockY = Math.floor((laser[1] < laser[3] ? laser[3] : laser[1]) / blockSize);
                         let blockHit = false;
-                        for(var x=smallestX; x<=largestX; x++){
-                            for(var y=smallestY; y<=largestY; y++){
+                        for(var x=smallestBlockX; x<=largestBlockX; x++){
+                            for(var y=smallestBlockY; y<=largestBlockY; y++){
                                 if(typeof  this.map[y] == 'undefined' || typeof this.map[y][x] == 'undefined'){
                                     // out of bountd
                                 }else{
@@ -569,17 +524,104 @@ if (cluster.isMaster) {
                             }
                         }
 
-                        console.log(blockHit);
-
-                        //check collision with block
-                        //cut laser short on collision
-                        //random 1/10 move block
 
                         //check collision with player
                         //cut laser short on collision
                         //remove health from player / check death / recalculate points / recalculate topcharts
 
+                        let smallestLaserX = (laser[0] < laser[2] ? laser[0] : laser[2]);// full map level coordinates
+                        let smallestLaserY = (laser[1] < laser[3] ? laser[1] : laser[3]);
+                        let largestLaserX = (laser[0] < laser[2] ? laser[2] : laser[0]);
+                        let largestLaserY = (laser[1] < laser[3] ? laser[3] : laser[1]);
+                        let playerHit = false;
+                        for(let ky in this.players) {
+                            if(!this.players.hasOwnProperty(ky)) continue;// skip loop if the property is from prototype
+                            if(this.players[ky].health == 0) continue;// dead
 
+                            var pad = this.players[ky].collisionPadding;
+
+                            if(this.players[key].id != this.players[ky].id){
+                                if(this.players[ky].x > smallestLaserX - pad && this.players[ky].x < largestLaserX + pad){
+                                    if(this.players[ky].y > smallestLaserY - pad && this.players[ky].y < largestLaserY + pad){
+                                        //player is in range to be hit
+                                        let ship = {width: this.players[ky].dimensions.w, height: this.players[ky].dimensions.h},
+                                            shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)},
+                                            shipY = {point: 0, left: -(ship.width / 2), right: (ship.width / 2)},
+                                            plX = this.players[ky].x,
+                                            plY = this.players[ky].y,
+                                            plR = this.players[ky].direction/1000,
+                                            shipPoints = [
+                                                {x: plX + (shipX.point * Math.cos(plR) - shipY.point * Math.sin(plR)), y: plY  + (shipX.point * Math.sin(plR) + shipY.point * Math.cos(plR))},
+                                                {x: plX + (shipX.left * Math.cos(plR) - shipY.left * Math.sin(plR)), y: plY  + (shipX.left * Math.sin(plR) + shipY.left * Math.cos(plR))},
+                                                {x: plX + (shipX.right * Math.cos(plR) - shipY.right * Math.sin(plR)), y: plY  + (shipX.right * Math.sin(plR) + shipY.right * Math.cos(plR))}
+                                            ];
+
+                                        shipPoints.forEach((e,i)=>{
+                                            var e2 = shipPoints[(i+1) % shipPoints.length];
+                                            //basic line intersection
+                                            if(Lib.lineIntersects(e.x, e.y, e2.x, e2.y, laser[0], laser[1], laser[2], laser[3])){
+                                                // find the exact point of intersection
+                                                var q = Lib.lineIntersectsPoint(e.x, e.y, e2.x, e2.y, laser[0], laser[1], laser[2], laser[3]);
+                                                if(q.onLine1 == true && q.onLine2 == true){
+                                                    //cut the laser short
+                                                    laser[2] = q.x;
+                                                    laser[3] = q.y;
+                                                    blockHit = false;
+                                                    playerHit = this.players[ky].id;
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+
+
+                        }
+
+
+
+
+                        // in response to collision
+                        if(blockHit !== false && Math.random() > 0.9){
+                            var blockEmpty = this.getMapEmpty();
+                            this.map[blockEmpty.y][blockEmpty.x] = this.map[blockHit.y][blockHit.x];
+                            this.map[blockHit.y][blockHit.x] = 0;
+                            blocksChanged.push([blockEmpty.x, blockEmpty.y, this.map[blockEmpty.y][blockEmpty.x]]);
+                            blocksChanged.push([blockHit.x, blockHit.y, this.map[blockHit.y][blockHit.x]]);
+                        }
+
+                        if(playerHit !== false){
+                            this.players['p' + playerHit].health -= this.players[key].weaponDamage;
+                            if(this.players['p' + playerHit].health <= 0){// death
+
+                                this.players['p' + playerHit].health = 0;
+                                this.players['p' + playerHit].velocity.x = 0;
+                                this.players['p' + playerHit].velocity.y = 0;
+                                this.players['p' + playerHit].weapon = 2;
+                                this.players['p' + playerHit].thruster = 2;
+                                this.players['p' + playerHit].lastActive = Date.now();
+                                if(this.players['p' + playerHit].connected)
+                                    this.players['p' + playerHit].ws.send(JSON.stringify({m: 'dead'}));
+                                /*respawn
+                                var emptyBlock = this.getMapEmpty();
+                                this.players['p' + playerHit].x = emptyBlock.x * this.mapConfig.units + (this.mapConfig.units/2);
+                                this.players['p' + playerHit].y = emptyBlock.y * this.mapConfig.units + (this.mapConfig.units/2);
+                                this.players['p' + playerHit].health = 100;
+                                this.players['p' + playerHit].velocity.x = 0;
+                                this.players['p' + playerHit].velocity.y = 0;
+                                */
+
+                                // set killers health to full
+                                this.players[key].health = 100;
+                                if(this.players[key].connected)
+                                    this.players[key].ws.send(JSON.stringify({m: 'killed', v: this.players['p' + playerHit].name}));
+
+                                // remove dc players on death
+                                if(this.players['p' + playerHit].connected == false){
+                                    Game.removePlayer(playerHit);
+                                }
+                            }
+                        }
 
                         laserList.push(laser);
                     }
@@ -590,13 +632,49 @@ if (cluster.isMaster) {
                 }
             }
 
-            // Send lasers
+            // Send player/laser location data
+            var masterPlayerData = this.playerSendData();// data about players to be sent to players
             for(let key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
-                var laserToSend = this.laserSendDataToBinary(laserList);
-                if(this.players[key].connected && laserToSend !== false)
-                    this.players[key].ws.send(laserToSend, {binary: true});
+                // Check players in view
+                let screen = {};
+                screen.top = this.players[key].y - this.players[key].view.h / 2;
+                screen.left = this.players[key].x - this.players[key].view.w / 2;
+                screen.right = this.players[key].x + this.players[key].view.w / 2;
+                screen.bottom = this.players[key].y + this.players[key].view.h / 2;
+
+                // Player location
+                let dataToSend = [];
+                masterPlayerData.forEach((e,i)=>{
+                    if(e[2] > screen.top && e[2] < screen.bottom && e[1] > screen.left && e[1] < screen.right){
+                        dataToSend.push(e);
+                    }
+                });
+                if (this.players[key].connected && dataToSend.length > 0)
+                    this.players[key].ws.send(this.sendDataToBinary(7, dataToSend, 16), {binary: true});
+
+                // Lasers
+                let lasersToSend = [];
+                laserList.forEach((e,i)=>{
+                    if(e[1] > screen.top && e[1] < screen.bottom && e[0] > screen.left && e[0] < screen.right){
+                        lasersToSend.push(e);
+                    }else if(e[3] > screen.top && e[3] < screen.bottom && e[2] > screen.left && e[2] < screen.right){
+                        lasersToSend.push(e);
+                    }
+                });
+                if(this.players[key].connected && lasersToSend.length > 0)
+                    this.players[key].ws.send(this.sendDataToBinary(8, lasersToSend, 16), {binary: true});
+
+            }
+
+
+            // Send block changes
+            for(let key in this.players) {
+                if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                if(this.players[key].connected && blocksChanged.length > 0)
+                    this.players[key].ws.send(this.sendDataToBinary(9, blocksChanged, 16), {binary: true});
 
             }
 
@@ -625,6 +703,19 @@ if (cluster.isMaster) {
                 this.serverLoad.tps = (1000 / timeLastSec) * (1000 / this.loopDelay);
 
                 //console.log(this.getServerLoad(false));
+            }
+            // Executes one per game minute
+            if (this.loopCount % (60000 / this.loopDelay) == 0) {
+
+                // Kick player if they have been dead for 15 minutes
+                var curDate = Date.now();
+                for(let key in this.players) {
+                    if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+                    if(curDate - this.players[key].lastActive > 600000 && this.players[key].connected && this.players[key].health == 0){
+                        this.players[key].ws.send(JSON.stringify({m: 'timeout', v: curDate}));
+                        this.players[key].ws.close();
+                    }
+                }
             }
 
 
