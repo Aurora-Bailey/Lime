@@ -66,7 +66,6 @@ class WebSocketClass {
                 if(x[0] == 8){// laser location
                     Game.data.lasers = Game.data.lasers.concat(WS.unpackBinary(d, 16));
                     Game.draw.lasers();
-                    console.log('laser' , Date.now());
                 }
 
                 if(x[0] == 9){// block change
@@ -356,7 +355,6 @@ class GameClass{
                     this.render.names[i] = new PIXI.Text('', {font: 'bold 30px Arial', fill: 'white', align: 'center', stroke: '#000000', strokeThickness: 6 });
                     this.render.names[i].anchor.set(0.5);
                     this.render.text.addChild(this.render.names[i]);
-                    console.log('new name spot');
                 }
 
                 // Name

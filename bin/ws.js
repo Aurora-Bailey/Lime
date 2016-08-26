@@ -412,7 +412,7 @@ if (cluster.isMaster) {
                             this.players[key].y--;
                             this.players[key].velocity.y = 0;
                         }
-                    }else if(this.map[yToCell][xToCell] != 0){
+                    }else if(this.map[yToCell][xToCell] != 0 && this.map[yToCell][xToCell] != this.players[key].color){
                         //Possible collision, finer calculation needed.
                         var ship = {width: this.players[key].dimensions.w, height: this.players[key].dimensions.h},
                             shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)},
@@ -615,37 +615,46 @@ if (cluster.isMaster) {
 
 
                         // in response to collision
-                        if(blockHit !== false && Math.random() < 0.9){
-                            var blockEmpty = this.getMapEmpty();
-                            this.map[blockEmpty.y][blockEmpty.x] = this.map[blockHit.y][blockHit.x];
-                            this.map[blockHit.y][blockHit.x] = 0;
-                            blocksChanged.push([blockEmpty.x, blockEmpty.y, this.map[blockEmpty.y][blockEmpty.x]]);
-                            blocksChanged.push([blockHit.x, blockHit.y, this.map[blockHit.y][blockHit.x]]);
+                        if(blockHit !== false){
+                            if(Math.random() > 0.95 || this.map[blockHit.y][blockHit.x] == this.players[key].color){// 1 out of 20 chance
+                                var blockEmpty = this.getMapEmpty();
+                                this.map[blockEmpty.y][blockEmpty.x] = this.map[blockHit.y][blockHit.x];
+                                this.map[blockHit.y][blockHit.x] = 0;
+                                blocksChanged.push([blockEmpty.x, blockEmpty.y, this.map[blockEmpty.y][blockEmpty.x]]);
+                                blocksChanged.push([blockHit.x, blockHit.y, this.map[blockHit.y][blockHit.x]]);
+                            }
                         }
 
                         if(playerHit !== false){
-                            this.players['p' + playerHit].health -= this.players[key].weaponDamage;
-                            if(this.players['p' + playerHit].health <= 0){// death
+                            if(this.players['p' + playerHit].color == this.players[key].color){// heal
+                                this.players['p' + playerHit].health += this.players[key].weaponDamage;
+                                if(this.players['p' + playerHit].health > 100)
+                                    this.players['p' + playerHit].health = 100;
+                            }else{// damage
+                                this.players['p' + playerHit].health -= this.players[key].weaponDamage;
+                                if(this.players['p' + playerHit].health <= 0){// death
 
-                                this.players['p' + playerHit].health = 0;
-                                this.players['p' + playerHit].velocity.x = 0;
-                                this.players['p' + playerHit].velocity.y = 0;
-                                this.players['p' + playerHit].weapon = 2;
-                                this.players['p' + playerHit].thruster = 2;
-                                this.players['p' + playerHit].lastActive = Date.now();
-                                if(this.players['p' + playerHit].connected)
-                                    this.players['p' + playerHit].ws.sendObj({m: 'dead'});
+                                    this.players['p' + playerHit].health = 0;
+                                    this.players['p' + playerHit].velocity.x = 0;
+                                    this.players['p' + playerHit].velocity.y = 0;
+                                    this.players['p' + playerHit].weapon = 2;
+                                    this.players['p' + playerHit].thruster = 2;
+                                    this.players['p' + playerHit].lastActive = Date.now();
+                                    if(this.players['p' + playerHit].connected)
+                                        this.players['p' + playerHit].ws.sendObj({m: 'dead'});
 
-                                // set killers health to full
-                                this.players[key].health = 100;
-                                if(this.players[key].connected)
-                                    this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
+                                    // set killers health to full
+                                    this.players[key].health = 100;
+                                    if(this.players[key].connected)
+                                        this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
 
-                                // remove dc players on death
-                                if(this.players['p' + playerHit].connected == false){
-                                    Game.removePlayer(playerHit);
+                                    // remove dc players on death
+                                    if(this.players['p' + playerHit].connected == false){
+                                        Game.removePlayer(playerHit);
+                                    }
                                 }
                             }
+
                         }
 
                         laserList.push(laser);
