@@ -68,14 +68,10 @@
     </div>
 
     <div id="maingame" class="hide">
-        <div style="position: absolute; top:0; left:0;">
-            <button onclick="WS.stopWebSocket()">Exit</button>
-            <input type="text" onchange="WS.sendObj({m: 'load', v: this.value})" />
-            <button onclick="WS.sendObj({m: 'get'})">Get Load</button>
-            <button onclick="WS.sendObj({m: 'ping', v: Date.now()})">Get Ping</button>
-            <button onclick="WS.sendObj({m: 'server'})">Get Server</button>
-        </div>
 
+        <div id="minimap">
+
+        </div>
     </div>
 
     <div id="respawn" class="hide">

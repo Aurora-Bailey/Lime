@@ -126,12 +126,6 @@ if (cluster.isMaster) {
                         Game.players['p' + ws.playerId].velocity.x = 0;
                         Game.players['p' + ws.playerId].velocity.y = 0;
                     }
-                }else if (d.m == 'get') {
-                    ws.sendObj(Game.getServerLoad(true));
-                }else if (d.m == 'ping') {
-                    ws.sendObj(d);
-                }else if (d.m == 'server') {
-                    ws.sendObj({m:'server', v: WORKER_INDEX});
                 }
             }
             catch(err){
@@ -319,7 +313,7 @@ if (cluster.isMaster) {
             return {x: x, y: y};
         }
 
-        static getServerLoad(JSON) {
+        static getServerLoad(JSON){
             if (JSON)
                 return {
                     't': this.serverLoad.tps,
@@ -328,7 +322,7 @@ if (cluster.isMaster) {
                     'l': this.serverLoad.low
                 };
             else
-                return 'tps: ' + this.serverLoad.tps + ' Average: ' + this.serverLoad.current + '% High: ' + this.serverLoad.high + '% Low: ' + this.serverLoad.low + '% (percent of compute time used per tick)';
+                return 'tps: ' + this.serverLoad.tps + ' Average: ' + this.serverLoad.current + '% High: ' + this.serverLoad.high + '% Low: ' + this.serverLoad.low + '% (percent of one core used per tick)';
         }
 
         static loop() {
@@ -737,6 +731,9 @@ if (cluster.isMaster) {
                         this.players[key].ws.close();
                     }
                 }
+
+                // Output the server load onece per minute
+                console.log(Game.getServerLoad());
             }
 
 
