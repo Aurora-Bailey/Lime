@@ -318,7 +318,7 @@ class GameClass{
                     if(e != 0){
                         var offset = {x: i * blocksize, y: index * blocksize};
 
-                        this.render.minimap.beginFill('0xffffff');
+                        this.render.minimap.beginFill('0x333333');
                         this.render.minimap.alpha = 1;
                         this.render.minimap.lineStyle(0, 0xffffff, 1);
                         this.render.minimap.moveTo(offset.x + 0, offset.y + 0);
@@ -391,6 +391,34 @@ class GameClass{
                 if(e[0] == this.data.myId){
                     this.render.camera.position.x = -offset.x + Game.view.x / 2;
                     this.render.camera.position.y = -offset.y + Game.view.y / 2;
+                }
+            });
+
+            this.draw.miniplayers();
+        };
+        this.draw.miniplayers = ()=>{
+
+            var blocksize = this.rendererMinimap.baseResolution.width / this.data.map.length;
+            var scale = blocksize / this.data.config.blocksize;
+
+            this.render.miniplayers.clear();
+
+            this.data.players.tick.forEach((e,i)=>{
+                if(e[4] == 0) return false;// skip dead players
+
+                // only dray player for now
+                if(e[0] == this.data.myId){
+                    var offset = {x: e[1] * scale, y: e[2] * scale};
+                    var id = e[0];
+                    var player = this.data.players.list['p' + id];
+                    //id x y rotation health level
+
+                    // Player ship
+                    this.render.miniplayers.beginFill(this.color.numToColor(player.color));
+                    this.render.miniplayers.alpha = 1;
+                    this.render.miniplayers.lineStyle(4, 0xffffff, 1);
+                    this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
+                    this.render.miniplayers.endFill();
                 }
             });
 

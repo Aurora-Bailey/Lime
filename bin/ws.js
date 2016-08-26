@@ -97,7 +97,7 @@ if (cluster.isMaster) {
                         y: 100, //(emptySpot.y * Game.mapConfig.units) + (Game.mapConfig.units / 2),
                         direction: 0,
                         thruster: 2,
-                        topSpeed: 40,
+                        topSpeed: 30,
                         weapon: 2,
                         weaponSpeed: 1000/6,
                         weaponLockout: Date.now(),
@@ -180,8 +180,8 @@ if (cluster.isMaster) {
 
             //Map
             this.mapConfig = {};
-            this.mapConfig.numBlocks = 80;
-            this.mapConfig.width = this.mapConfig.numBlocks;//blocks
+            this.mapConfig.numBlocks = 60;//(150 MAX because of int 16 ArrayBuffer  150*blockSize 200 = 30,000 this leaves room for lasers to go into the black)
+            this.mapConfig.width = this.mapConfig.numBlocks;//all maps will have the same width and height (square)
             this.mapConfig.height = this.mapConfig.numBlocks;//blocks
             this.mapConfig.blank = 80;//percent of empty blocks
             this.mapConfig.bonus = 1;//percent of bonus blocks
@@ -347,20 +347,28 @@ if (cluster.isMaster) {
             for(let key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
-                // Update location
-                if(this.players[key].thruster != 2){
-                    var oldSpeed = Math.abs(Lib.distance(0,0,this.players[key].velocity.x,this.players[key].velocity.y));
 
-                    this.players[key].velocity.x += Math.cos(this.players[key].direction / 1000) * (2 * (1 - oldSpeed / this.players[key].topSpeed));
-                    this.players[key].velocity.y += Math.sin(this.players[key].direction / 1000) * (2 * (1 - oldSpeed / this.players[key].topSpeed));
+
+                // turn on thrusters
+                if(this.players[key].thruster != 2){
+                    this.players[key].velocity.x += Math.cos(this.players[key].direction / 1000) * 1.5;
+                    this.players[key].velocity.y += Math.sin(this.players[key].direction / 1000) * 1.5;
 
                     if(this.players[key].thruster == 3){// 3 is when you click on and off in the same frame
                         this.players[key].thruster = 2;// register the click then unclick
                     }
                 }
 
-                this.players[key].velocity.x *= 0.99;
-                this.players[key].velocity.y *= 0.99;
+                // Update location
+                this.players[key].velocity.x *= 0.98;
+                this.players[key].velocity.y *= 0.98;
+                var newSpeed = Math.abs(Lib.distance(0,0,this.players[key].velocity.x,this.players[key].velocity.y));
+                if(newSpeed > this.players[key].topSpeed){
+                    // - (0.025 * (Math.abs(this.players[key].velocity.x) / this.players[key].topSpeed));
+                    this.players[key].velocity.x *= 0.97;
+                    this.players[key].velocity.y *= 0.97;
+                    newSpeed = Math.abs(Lib.distance(0,0,this.players[key].velocity.x,this.players[key].velocity.y));
+                }
                 this.players[key].x += this.players[key].velocity.x;
                 this.players[key].y += this.players[key].velocity.y;
 
@@ -607,7 +615,7 @@ if (cluster.isMaster) {
 
 
                         // in response to collision
-                        if(blockHit !== false && Math.random() > 0.9){
+                        if(blockHit !== false && Math.random() < 0.9){
                             var blockEmpty = this.getMapEmpty();
                             this.map[blockEmpty.y][blockEmpty.x] = this.map[blockHit.y][blockHit.x];
                             this.map[blockHit.y][blockHit.x] = 0;
