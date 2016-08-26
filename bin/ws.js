@@ -59,16 +59,49 @@ if (cluster.isMaster) {
 
                 if(typeof d[0] !== 'undefined'){
                     if(d[0] == 2 && typeof ws.playerId != 'undefined'){// player input
-                        if(Game.players['p' + ws.playerId].health != 0){
+
+                        var plId = 'p' + ws.playerId;
+                        if(Game.players[plId].health != 0){
                             if(d[1] != 0)
-                                Game.players['p' + ws.playerId].direction = parseInt(d[1]);
+                                Game.players[plId].direction = parseInt(d[1]);
                             if(d[2] != 0)
-                                Game.players['p' + ws.playerId].thruster = parseInt(d[2]);
+                                Game.players[plId].thruster = parseInt(d[2]);
                             if(d[3] != 0)
-                                Game.players['p' + ws.playerId].weapon = parseInt(d[3]);
+                                Game.players[plId].weapon = parseInt(d[3]);
                         }
-                        if(d[4] != 0)
-                            console.log(Game.players['p' + ws.playerId].message = d[4]);
+
+                        // Message
+                        if(d[4] != 0 && typeof d[4] == 'string' && d[4].length > 0){
+                            Game.players[plId].messageCount++;
+                            Game.players[plId].messageData += d[4].length;
+
+                            // Renew player message bank
+                            Game.players[plId].messageBank += Math.floor((Date.now() - Game.players[plId].messageLast) / 10000);
+                            Game.players[plId].messageLast = Date.now();
+                            if(Game.players[plId].messageBank > 10)
+                                Game.players[plId].messageBank = 10;
+
+
+                            if(Game.players[plId].messageBank > 0){// Limit number of messages a player can send
+                                Game.players[plId].messageBank--;
+
+                                var modMessage = '[' + Game.players[plId].name + '] ' + d[4].slice(0, 100);// cut the string short and add the name
+
+                                var x = Game.sendDataToBinary(6, [Lib.textToIntArray(modMessage, 127)], 8);
+
+                                for(let key in Game.players) {
+                                    if (!Game.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                                    if(Game.players[key].color == Game.players[plId].color && Game.players[key].connected && x.length > 0)
+                                        Game.players[key].ws.sendBinary(x);
+                                }
+                            }else{// player is out of messages
+                                if(Game.players[plId].connected)
+                                    Game.players[plId].ws.sendObj({m: 'oom'});
+                            }
+                        }
+                        // end message
+
                     }
 
                 }else if(d.m == "start"){
@@ -104,7 +137,10 @@ if (cluster.isMaster) {
                         weaponDistance: 1500,
                         weaponDamage: 30,
                         lastActive: Date.now(),
-                        message: ''};
+                        messageData: 0,
+                        messageBank: 10,
+                        messageLast: Date.now(),
+                        messageCount: 0};
                     ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map});
                     wss.broadcast(JSON.stringify({m: 'newplayer', v: Game.getSinglePlayer(tryId)}));
 
@@ -833,6 +869,16 @@ class Lib{
 
     static distance(x1, y1, x2, y2){
         return Math.sqrt(Math.pow(x2-x1,2) + Math.pow(y2-y1,2));
+    }
+
+    static textToIntArray(text, cutoff){
+        var x = [];
+        for(var i=0; i<text.length; i++){
+            var q = text.charCodeAt(i);
+            if(q <= cutoff)
+                x.push(q);
+        }
+        return x;
     }
 
     static deepCopy(obj){

@@ -54,9 +54,16 @@ class WebSocketClass {
                         delete Game.data.players.list['p' + d.v];
                 }else if(d.m == "newplayer"){
                     Game.data.players.list['p' + d.v.id] = d.v;
+                }else if(d.m == "oom"){
+                    console.log('out of messages');
                 }
             }else{
                 var x = new Int8Array(d);
+
+                if(x[0] == 6){
+                    console.log(d);
+                    console.log(WS.unpackBinary(d, 8));
+                }
 
                 if(x[0] == 7){// players location and direction
                     Game.data.players.tick = WS.unpackBinary(d, 16);
@@ -85,8 +92,9 @@ class WebSocketClass {
     }
 
     unpackBinary(data, bitSize){
-        var binaryData = new Int16Array(data);
+        var binaryData = false;
         if(bitSize == 8) binaryData = new Int8Array(data);
+        if(bitSize == 16) binaryData = new Int16Array(data);
         if(bitSize == 32) binaryData = new Int32Array(data);
         var currentDate = Date.now();
         var mainArray = [];
