@@ -49,8 +49,6 @@ class WebSocketClass {
                     var playerId = d.id;
                 }else if(d.m == 'dead'){
                     $('#respawn').removeClass('hide');
-                }else if(d.m == "ping"){
-                    console.log(Date.now() - parseInt(d.v));
                 }else if(d.m == "dcplayer"){
                     if(typeof Game.data.players.list['p' + d.v] !== 'undefined')
                         delete Game.data.players.list['p' + d.v];
@@ -222,6 +220,11 @@ class GameClass{
         this.renderer.baseResolution = {width: this.renderer.width, height: this.renderer.height};
         $('#maingame').append(this.renderer.view);
 
+        // Mini Map
+        this.rendererMinimap = PIXI.autoDetectRenderer(400, 400,{backgroundColor : 0x000000});
+        this.rendererMinimap.baseResolution = {width: this.rendererMinimap.width, height: this.rendererMinimap.height};
+        $('#minimap').append(this.rendererMinimap.view);
+
         // Data
         this.data = {};
         this.data.config = {};
@@ -239,6 +242,11 @@ class GameClass{
         this.render.players = new PIXI.Graphics();
         this.render.lasers = new PIXI.Graphics();
 
+        // Minimap layers
+        this.render.miniworld = new PIXI.Container();
+        this.render.minimap = new PIXI.Graphics();
+        this.render.miniplayers = new PIXI.Graphics();
+
         // Background for the map layer
         this.render.backgroundImage = PIXI.Texture.fromImage('images/colorfog.jpg');
         this.render.background = new PIXI.extras.TilingSprite(this.render.backgroundImage, 1000, 1000);
@@ -253,6 +261,10 @@ class GameClass{
         this.render.camera.addChild(this.render.players);
         this.render.camera.addChild(this.render.lasers);
         this.render.camera.addChild(this.render.text);
+
+        // Minimap tree
+        this.render.miniworld.addChild(this.render.minimap);
+        this.render.miniworld.addChild(this.render.miniplayers);
 
         // Draw functions
         this.draw = {};
@@ -289,6 +301,32 @@ class GameClass{
                         this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
                         this.render.map.lineTo(offset.x + border, offset.y + border);
                         this.render.map.endFill();
+                    }
+
+                });
+            });
+
+            this.draw.minimap();// tag along
+        };
+        this.draw.minimap = ()=>{
+            var blocksize = this.rendererMinimap.baseResolution.width / this.data.map.length;
+
+            this.render.minimap.clear();
+
+            this.data.map.forEach((element, index)=>{
+                element.forEach((e, i)=>{
+                    if(e != 0){
+                        var offset = {x: i * blocksize, y: index * blocksize};
+
+                        this.render.minimap.beginFill('0xffffff');
+                        this.render.minimap.alpha = 1;
+                        this.render.minimap.lineStyle(0, 0xffffff, 1);
+                        this.render.minimap.moveTo(offset.x + 0, offset.y + 0);
+                        this.render.minimap.lineTo(offset.x + 0, offset.y + blocksize);
+                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + blocksize);
+                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + 0);
+                        this.render.minimap.lineTo(offset.x + 0, offset.y + 0);
+                        this.render.minimap.endFill();
                     }
 
                 });
@@ -357,7 +395,6 @@ class GameClass{
             });
 
         };
-
         this.draw.lasers = ()=>{
             var frameTime = Date.now();
             var laserTimeout = 100;
@@ -416,6 +453,17 @@ class GameClass{
         // Screen resizing
         // Make the game window responsive
         $(window).on('resize', ()=>{
+
+            // Minimap render window
+            var minimapWidth = $('#minimap').width();
+            var minimapHeight = $('#minimap').height();
+            this.rendererMinimap.resize(minimapWidth, minimapHeight);
+
+            this.render.miniworld.scale.x = minimapWidth / this.rendererMinimap.baseResolution.width;
+            this.render.miniworld.scale.y =	minimapHeight / this.rendererMinimap.baseResolution.height;
+
+
+            // Main render window
             var width = $(window).width();
             var height = $(window).height();
 
@@ -481,6 +529,7 @@ class GameClass{
         requestAnimationFrame(()=>{this.animate()});
         this.draw.lasers();
         this.renderer.render(this.render.world);
+        this.rendererMinimap.render(this.render.miniworld);
     }
 }
 var Game = new GameClass();
