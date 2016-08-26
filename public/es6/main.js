@@ -129,7 +129,6 @@ class PlayerOutput{
 
         // chat
         this.chatMode = false;
-        this.chatText = '';
 
         // click state
         this.thrusterState = false;

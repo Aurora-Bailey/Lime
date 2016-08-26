@@ -40,29 +40,18 @@ $(window).on('mouseup', function(e){
 });
 $(window).on('keydown', function(e){
     if(!PO.ready)return true;
-    if(e.keyCode == 13){
-        if(PO.chatMode){
-            PO.tick.message = PO.chatText;
-            PO.tickchanged = true;
-            PO.chatMode = false;
-            PO.chatText = '';
-        }else{
-            PO.chatMode = true;
-        }
-    }else{
-        if(PO.chatMode){
-            if(e.keyCode > 31 && e.keyCode < 127)
-                PO.chatText += e.key;
-            if(e.keyCode == 8)
-                PO.chatText = PO.chatText.slice(0, -1);
-        }else{
-            if(e.keyCode == 87){
-                PO.weapon(true);
-            }else if(e.keyCode == 32){
-                PO.thrust(true);
-            }
+    if(!PO.chatMode){
+        if(e.keyCode == 87){
+            PO.weapon(true);
+        }else if(e.keyCode == 32){
+            PO.thrust(true);
         }
     }
+
+    if(e.keyCode == 13 || e.keyCode == 9){
+        return false;
+    }
+
 });
 $(window).on('keyup', function(e){
     if(!PO.ready)return true;
@@ -73,6 +62,23 @@ $(window).on('keyup', function(e){
             PO.thrust(false);
         }
     }
+    if(e.keyCode == 13 || e.keyCode == 9){
+        if(PO.chatMode){
+            PO.tick.message = $('#actual-chat-box').val();
+            PO.tickchanged = true;
+            PO.chatMode = false;
+            $('#enter-chat').addClass('hide');
+            $('#actual-chat-box').blur().val('');
+        }else{
+            PO.chatMode = true;
+            $('#enter-chat').removeClass('hide');
+            $('#actual-chat-box').focus();
+        }
+        return false;
+    }
+
+
+
 
 });
 $(window).on('mousemove', function(e){

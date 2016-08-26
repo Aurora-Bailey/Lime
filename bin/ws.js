@@ -68,7 +68,7 @@ if (cluster.isMaster) {
                                 Game.players['p' + ws.playerId].weapon = parseInt(d[3]);
                         }
                         if(d[4] != 0)
-                            Game.players['p' + ws.playerId].message = d[4];
+                            console.log(Game.players['p' + ws.playerId].message = d[4]);
                     }
 
                 }else if(d.m == "start"){

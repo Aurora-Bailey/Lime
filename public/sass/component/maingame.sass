@@ -18,3 +18,44 @@
     bottom: 0
     opacity: 0.8
     z-index: 1010
+
+#enter-chat
+  position: absolute
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  background-color: rgba(0,0,0, 0.6)
+  z-index: 20000
+  pointer-events: none
+
+  #enter-chat-box
+    position: absolute
+    left: 0
+    right: 0
+    bottom: 2vh
+    margin: auto
+    width: 60vh
+    height: 6vh
+    line-height: 6vh
+    font-size: 4vh
+    background-color: $primary
+    border: 0.5vh solid $primary-contrast
+    color: $primary-contrast
+    border-radius: 1vh
+    box-shadow: 0 0 5vh 0 rgba(255,255,255,1)
+
+  #actual-chat-box
+    pointer-events: auto
+    width: 58vh
+    height: 6vh
+    line-height: 6vh
+    padding: 0 2vh
+    font-size: 4vh
+    background-color: transparent
+    color: darken($primary-contrast, 40%)
+    border: none
+
+    &:focus
+      outline: none
+
