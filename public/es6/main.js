@@ -336,6 +336,25 @@ class GameClass{
                         this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
                         this.render.map.lineTo(offset.x + border, offset.y + border);
                         this.render.map.endFill();
+
+
+                        if(e==21){
+                            this.render.map.lineStyle(10, 0x000000, 1);
+                            this.render.map.moveTo(offset.x + border, offset.y + border);
+                            this.render.map.lineTo(offset.x + blocksize - border, offset.y + blocksize -border);
+                        }else if(e==22){
+                            this.render.map.lineStyle(10, 0x000000, 1);
+                            this.render.map.moveTo(offset.x + blocksize - border, offset.y + blocksize -border);
+                            this.render.map.lineTo(offset.x + border, offset.y + border);
+                            this.render.map.moveTo(offset.x + border, offset.y + blocksize - border);
+                            this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
+                        }else if(e==23){
+                            this.render.map.lineStyle(10, 0x000000, 1);
+                            this.render.map.moveTo(offset.x + border, offset.y + blocksize - border);
+                            this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
+                        }else if(e==24){
+
+                        }
                     }
 
                 });

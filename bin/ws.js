@@ -124,6 +124,7 @@ if (cluster.isMaster) {
                         color: Math.ceil(Math.random() * 6),
                         level: 0,
                         health: 100,
+                        maxHealth: 100,
                         connected: true,
                         id: tryId,
                         name: (d.n == ''? 'Nameless' + tryId: d.n),
@@ -134,10 +135,12 @@ if (cluster.isMaster) {
                         thruster: 2,
                         topSpeed: 30,
                         weapon: 2,
-                        weaponSpeed: 1000/6,
+                        weaponSpeed: 1000/2,
                         weaponLockout: Date.now(),
                         weaponDistance: 1500,
                         weaponDamage: 30,
+                        bonus: {thruster: false, weapon: false},
+                        bonusTimeout: 5000, //miliseconds
                         lastActive: Date.now(),
                         messageData: 0,
                         messageBank: 5,
@@ -160,7 +163,7 @@ if (cluster.isMaster) {
                         var emptyBlock = Game.getMapEmpty();
                         Game.players['p' + ws.playerId].x = emptyBlock.x * Game.mapConfig.units + (Game.mapConfig.units/2);
                         Game.players['p' + ws.playerId].y = emptyBlock.y * Game.mapConfig.units + (Game.mapConfig.units/2);
-                        Game.players['p' + ws.playerId].health = 100;
+                        Game.players['p' + ws.playerId].health = Game.players['p' + ws.playerId].maxHealth;
                         Game.players['p' + ws.playerId].velocity.x = 0;
                         Game.players['p' + ws.playerId].velocity.y = 0;
                     }
@@ -218,7 +221,7 @@ if (cluster.isMaster) {
 
             //Map
             this.mapConfig = {};
-            this.mapConfig.numBlocks = 60;//(150 MAX because of int 16 ArrayBuffer  150*blockSize 200 = 30,000 this leaves room for lasers to go into the black)
+            this.mapConfig.numBlocks = 30;//(150 MAX because of int 16 ArrayBuffer  150*blockSize 200 = 30,000 this leaves room for lasers to go into the black)
             this.mapConfig.width = this.mapConfig.numBlocks;//all maps will have the same width and height (square)
             this.mapConfig.height = this.mapConfig.numBlocks;//blocks
             this.mapConfig.blank = 80;//percent of empty blocks
@@ -230,11 +233,11 @@ if (cluster.isMaster) {
                 for(var k=0; k<this.mapConfig.height; k++) {
                     var r = Math.random() * 100;
                     if (r < this.mapConfig.blank){
-                        this.map[i][k] = 0;
+                        this.map[i][k] = 0;// blank
                     } else if (r < this.mapConfig.blank + this.mapConfig.bonus)
-                        this.map[i][k] = 10 + Math.floor(Math.random() * 10);
+                        this.map[i][k] = 20 + Math.ceil(Math.random() * 4);// bonus
                     else
-                        this.map[i][k] = Math.ceil(Math.random() * 6)
+                        this.map[i][k] = Math.ceil(Math.random() * 6)// color square
                 }
             }
 
@@ -380,17 +383,25 @@ if (cluster.isMaster) {
             }
 
             // Main Code
+            var laserList = [];
+            var blocksChanged = [];
 
             //Update player location
             for(let key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
-
+                var bonusThrust = 1;
+                if(this.players[key].bonus.thruster !== false){
+                    if(tickDate - this.players[key].bonus.thruster > this.players[key].bonusTimeout)
+                        this.players[key].bonus.thruster = false;
+                    else
+                        bonusThrust = 2;
+                }
 
                 // turn on thrusters
                 if(this.players[key].thruster != 2){
-                    this.players[key].velocity.x += Math.cos(this.players[key].direction / 1000) * 1.5;
-                    this.players[key].velocity.y += Math.sin(this.players[key].direction / 1000) * 1.5;
+                    this.players[key].velocity.x += Math.cos(this.players[key].direction / 1000) * (1.5 * bonusThrust);
+                    this.players[key].velocity.y += Math.sin(this.players[key].direction / 1000) * (1.5 * bonusThrust);
 
                     if(this.players[key].thruster == 3){// 3 is when you click on and off in the same frame
                         this.players[key].thruster = 2;// register the click then unclick
@@ -450,7 +461,7 @@ if (cluster.isMaster) {
                             this.players[key].y--;
                             this.players[key].velocity.y = 0;
                         }
-                    }else if(this.map[yToCell][xToCell] != 0 && this.map[yToCell][xToCell] != this.players[key].color){
+                    }else if(this.map[yToCell][xToCell] != 0 && this.map[yToCell][xToCell] != this.players[key].color){ // color block
                         //Possible collision, finer calculation needed.
                         var ship = {width: this.players[key].dimensions.w, height: this.players[key].dimensions.h},
                             shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)},
@@ -498,31 +509,59 @@ if (cluster.isMaster) {
 
                             });
 
-                            //console.log(intersecting);
+                            if(collision == true && this.map[yToCell][xToCell] > 20 && this.map[yToCell][xToCell] < 30) {// Bonus
+                                var bonusNumber = this.map[yToCell][xToCell];
+
+                                // Move the block
+                                var blockEmpty = this.getMapEmpty();
+                                this.map[blockEmpty.y][blockEmpty.x] = this.map[yToCell][xToCell];
+                                this.map[yToCell][xToCell] = 0;
+                                blocksChanged.push([blockEmpty.x, blockEmpty.y, this.map[blockEmpty.y][blockEmpty.x]]);
+                                blocksChanged.push([xToCell, yToCell, this.map[yToCell][xToCell]]);
+                                collision = false;
 
 
-                            //Collision logic
-                            if(intersecting[0]){
-                                this.players[key].y -= 1;
-                                if(this.players[key].velocity.y >= 0)
-                                    this.players[key].velocity.y = 0;// remove velocity
-                            }
-                            if(intersecting[2]){
-                                this.players[key].y += 1;
-                                if(this.players[key].velocity.y <= 0)
-                                    this.players[key].velocity.y = 0;// remove velocity
+                                // Grant the bonus
+                                if(bonusNumber == 21){//health
+                                    this.players[key].health = this.players[key].maxHealth;
+                                }else if(bonusNumber == 22){//warp
+                                    var warpTo = this.getMapEmpty();
+                                    var blockUnite = this.mapConfig.units;
+                                    this.players[key].x = (warpTo.x * blockUnite) + (blockUnite/2);
+                                    this.players[key].y = (warpTo.y * blockUnite) + (blockUnite/2);
+                                }else if(bonusNumber == 23){//thruster
+                                    this.players[key].bonus.thruster = Date.now();
+                                }else if(bonusNumber == 24){//warp
+                                    this.players[key].bonus.weapon = Date.now();
+                                }
+
+
+                            }else{// colored block
+                                //Collision logic
+                                if(intersecting[0]){
+                                    this.players[key].y -= 1;
+                                    if(this.players[key].velocity.y >= 0)
+                                        this.players[key].velocity.y = 0;// remove velocity
+                                }
+                                if(intersecting[2]){
+                                    this.players[key].y += 1;
+                                    if(this.players[key].velocity.y <= 0)
+                                        this.players[key].velocity.y = 0;// remove velocity
+                                }
+
+                                if(intersecting[1]){
+                                    this.players[key].x += 1;
+                                    if(this.players[key].velocity.x <= 0)
+                                        this.players[key].velocity.x = 0;// remove velocity
+                                }
+                                if(intersecting[3]){
+                                    this.players[key].x -= 1;
+                                    if(this.players[key].velocity.x >= 0)
+                                        this.players[key].velocity.x = 0;// remove velocity
+                                }
                             }
 
-                            if(intersecting[1]){
-                                this.players[key].x += 1;
-                                if(this.players[key].velocity.x <= 0)
-                                    this.players[key].velocity.x = 0;// remove velocity
-                            }
-                            if(intersecting[3]){
-                                this.players[key].x -= 1;
-                                if(this.players[key].velocity.x >= 0)
-                                    this.players[key].velocity.x = 0;// remove velocity
-                            }
+
 
 
                         }
@@ -534,14 +573,20 @@ if (cluster.isMaster) {
             }
 
             // Make laser
-            var laserList = [];
-            var blocksChanged = [];
             for(let key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
                 if(this.players[key].weapon !=2){
                     if(tickDate >= this.players[key].weaponLockout){
-                        this.players[key].weaponLockout = tickDate + this.players[key].weaponSpeed;
+
+                        var bonusSpeed = 1;
+                        if(this.players[key].bonus.weapon !== false){
+                            if(tickDate - this.players[key].bonus.weapon > this.players[key].bonusTimeout)
+                                this.players[key].bonus.weapon = false;
+                            else
+                                bonusSpeed = 2;
+                        }
+                        this.players[key].weaponLockout = tickDate + Math.floor(this.players[key].weaponSpeed / bonusSpeed);
 
                         var laser = [];
                         laser[0] = this.players[key].x + Math.cos(this.players[key].direction / 1000) * this.players[key].collisionPadding;
@@ -655,19 +700,23 @@ if (cluster.isMaster) {
                         // in response to collision
                         if(blockHit !== false){
                             if(Math.random() > 0.95 || this.map[blockHit.y][blockHit.x] == this.players[key].color){// 1 out of 20 chance
-                                var blockEmpty = this.getMapEmpty();
-                                this.map[blockEmpty.y][blockEmpty.x] = this.map[blockHit.y][blockHit.x];
-                                this.map[blockHit.y][blockHit.x] = 0;
-                                blocksChanged.push([blockEmpty.x, blockEmpty.y, this.map[blockEmpty.y][blockEmpty.x]]);
-                                blocksChanged.push([blockHit.x, blockHit.y, this.map[blockHit.y][blockHit.x]]);
+                                if(this.map[blockHit.y][blockHit.x] > 20 && this.map[blockHit.y][blockHit.x] < 30){//bonus
+                                    // bonus
+                                }else{// colored block
+                                    var blockEmpty = this.getMapEmpty();
+                                    this.map[blockEmpty.y][blockEmpty.x] = this.map[blockHit.y][blockHit.x];
+                                    this.map[blockHit.y][blockHit.x] = 0;
+                                    blocksChanged.push([blockEmpty.x, blockEmpty.y, this.map[blockEmpty.y][blockEmpty.x]]);
+                                    blocksChanged.push([blockHit.x, blockHit.y, this.map[blockHit.y][blockHit.x]]);
+                                }
                             }
                         }
 
                         if(playerHit !== false){
                             if(this.players['p' + playerHit].color == this.players[key].color){// heal
                                 this.players['p' + playerHit].health += this.players[key].weaponDamage;
-                                if(this.players['p' + playerHit].health > 100)
-                                    this.players['p' + playerHit].health = 100;
+                                if(this.players['p' + playerHit].health > this.players['p' + playerHit].maxHealth)
+                                    this.players['p' + playerHit].health = this.players['p' + playerHit].maxHealth;
                             }else{// damage
                                 this.players['p' + playerHit].health -= this.players[key].weaponDamage;
                                 if(this.players['p' + playerHit].health <= 0){// death
@@ -682,7 +731,7 @@ if (cluster.isMaster) {
                                         this.players['p' + playerHit].ws.sendObj({m: 'dead'});
 
                                     // set killers health to full
-                                    this.players[key].health = 100;
+                                    this.players[key].health = this.players[key].maxHealth;
                                     if(this.players[key].connected)
                                         this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
 
