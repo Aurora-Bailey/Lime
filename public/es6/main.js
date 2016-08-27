@@ -27,6 +27,7 @@ class WebSocketClass {
             PO.ready = false;
             $('#homepage').removeClass('hide');
             $('#maingame').addClass('hide');
+            $('#chat-log').addClass('hide');
         };
         this.server.onmessage = (e) => {
             var d = e.data;
@@ -46,24 +47,52 @@ class WebSocketClass {
                     PO.ready = true;
                     $('#homepage').addClass('hide');
                     $('#maingame').removeClass('hide');
+                    $('#chat-log').removeClass('hide');
+                    $('#chat-log').html('').prepend(
+                        $('<div />')
+                            .addClass('game')
+                            .text("Press [Enter] to open/close chat.")
+                    );
+                    $('#chat-log').prepend(
+                        $('<div />')
+                            .addClass('game')
+                            .text("You can only chat with " + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color) + " players.")
+                    );
                     var playerId = d.id;
                 }else if(d.m == 'dead'){
                     $('#respawn').removeClass('hide');
+                    $('#chat-log').prepend(
+                        $('<div />')
+                            .addClass('game')
+                            .text("You're Dead!")
+                    );
+                }else if(d.m == "killed"){
+                    $('#chat-log').prepend(
+                        $('<div />')
+                            .addClass('game')
+                            .text("You killed '" + d.v + "'")
+                    );
                 }else if(d.m == "dcplayer"){
                     if(typeof Game.data.players.list['p' + d.v] !== 'undefined')
                         delete Game.data.players.list['p' + d.v];
                 }else if(d.m == "newplayer"){
                     Game.data.players.list['p' + d.v.id] = d.v;
                 }else if(d.m == "oom"){
-                    console.log('out of messages');
+                    $('#chat-log').prepend(
+                        $('<div />')
+                            .addClass('game')
+                            .text("You've sent too many messages (try again in 10 seconds)")
+                    );
+                }else if(d.m == "tm"){// Team Message
+                    $('#chat-log').prepend(
+                        $('<div />')
+                            .addClass('team')
+                            .addClass(Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color).toLowerCase())
+                            .text('[ ' + Game.data.players.list['p' + d.id].name + ' ]  ' + d.v)
+                    );
                 }
             }else{
                 var x = new Int8Array(d);
-
-                if(x[0] == 6){
-                    console.log(d);
-                    console.log(WS.unpackBinary(d, 8));
-                }
 
                 if(x[0] == 7){// players location and direction
                     Game.data.players.tick = WS.unpackBinary(d, 16);

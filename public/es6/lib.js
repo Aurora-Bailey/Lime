@@ -63,6 +63,16 @@ class Lib {
         return true;
     }
 
+    static numToColorNameProper(num){
+        var colors = ['White','Purple','Blue','Green','Yellow','Orange','Red'];
+
+        if(typeof colors[num] !== 'undefined')
+            return colors[num];
+        else{
+            return colors[0];
+        }
+    }
+
     static socialMediaPost(site, url){
         if(site == 'facebook')
             window.open('http://www.facebook.com/share.php?u=' + url, 'Facebook', 'width=550,height=400');

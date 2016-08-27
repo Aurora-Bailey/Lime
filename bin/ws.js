@@ -85,15 +85,17 @@ if (cluster.isMaster) {
                             if(Game.players[plId].messageBank > 0){// Limit number of messages a player can send
                                 Game.players[plId].messageBank--;
 
-                                var modMessage = '[' + Game.players[plId].name + '] ' + d[4].slice(0, 100);// cut the string short and add the name
+                                var modMessage = d[4].slice(0, 140);// cut the string short
 
-                                var x = Game.sendDataToBinary(6, [Lib.textToIntArray(modMessage, 127)], 8);
+                                var x = {m: "tm", id: ws.playerId, v: modMessage}; //Game.sendDataToBinary(6, [Lib.textToIntArray(modMessage, 127)], 8);
 
                                 for(let key in Game.players) {
                                     if (!Game.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
-                                    if(Game.players[key].color == Game.players[plId].color && Game.players[key].connected && x.length > 0)
-                                        Game.players[key].ws.sendBinary(x);
+                                    if(Game.players[key].color == Game.players[plId].color && Game.players[key].connected && modMessage.length > 0){
+                                        Game.players[key].ws.sendObj(x);
+                                    }
+
                                 }
                             }else{// player is out of messages
                                 if(Game.players[plId].connected)
@@ -124,7 +126,7 @@ if (cluster.isMaster) {
                         health: 100,
                         connected: true,
                         id: tryId,
-                        name: d.n,
+                        name: (d.n == ''? 'Nameless' + tryId: d.n),
                         type: d.t,
                         x: 100,//(emptySpot.x * Game.mapConfig.units) + (Game.mapConfig.units / 2),
                         y: 100, //(emptySpot.y * Game.mapConfig.units) + (Game.mapConfig.units / 2),
@@ -138,7 +140,7 @@ if (cluster.isMaster) {
                         weaponDamage: 30,
                         lastActive: Date.now(),
                         messageData: 0,
-                        messageBank: 10,
+                        messageBank: 5,
                         messageLast: Date.now(),
                         messageCount: 0};
                     ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map});
