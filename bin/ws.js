@@ -24,7 +24,7 @@ if (cluster.isMaster) {
     }).listen(masterPort);
 } else {
     var WORKER_INDEX = process.env.WORKER_INDEX,
-        gamePort = parseInt(port) + parseInt(WORKER_INDEX),
+        gamePort = parseInt(port) + parseInt(WORKER_INDEX) + 1000,
         http = require('http'),
         WebSocketServer = require('ws').Server,
         express = require('express'),
@@ -146,7 +146,7 @@ if (cluster.isMaster) {
                         messageBank: 5,
                         messageLast: Date.now(),
                         messageCount: 0};
-                    ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map});
+                    ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map, tick: Game.loopDelay, minitick: Game.minimapDelay});
                     wss.broadcast(JSON.stringify({m: 'newplayer', v: Game.getSinglePlayer(tryId)}));
 
                 }else if(d.m == 'compatible'){
@@ -216,6 +216,7 @@ if (cluster.isMaster) {
 // Game Loop
     class Game {
         static init() {
+            this.ready = false;
             // Game data
             this.players = {};
 
@@ -237,12 +238,13 @@ if (cluster.isMaster) {
                     } else if (r < this.mapConfig.blank + this.mapConfig.bonus)
                         this.map[i][k] = 20 + Math.ceil(Math.random() * 4);// bonus
                     else
-                        this.map[i][k] = Math.ceil(Math.random() * 6)// color square
+                        this.map[i][k] = Math.ceil(Math.random() * 6);// color square
                 }
             }
 
             // Tweakable
             this.loopDelay = 1000/20;//20 ticks per second
+            this.minimapDelay = this.loopDelay * 4;// every 4 ticks
 
             // Default
             this.lastLoop = Date.now();
@@ -262,6 +264,7 @@ if (cluster.isMaster) {
 
             // Start the game loop
             this.loop();
+            this.ready = true;
         }
 
         static removePlayer(id){
@@ -802,7 +805,7 @@ if (cluster.isMaster) {
 
             // Minimap
             //executes twice per second
-            if (this.loopCount % (250 / this.loopDelay) == 0) {
+            if (this.loopCount % (this.minimapDelay / this.loopDelay) == 0) {
                 // Get x,y for minimap
                 var minimapColors = [];
                 for(let key in this.players) {

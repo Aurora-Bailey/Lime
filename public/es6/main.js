@@ -42,8 +42,11 @@ class WebSocketClass {
                     Game.data.players.list = d.players;
                     Game.data.myId = d.id;
                     Game.data.map = d.map;
+                    Game.data.serverTick = d.tick;
+                    Game.data.minimapTick = d.minitick;
                     Game.data.config.blocksize = d.block;
                     Game.draw.map();
+                    Game.draw.minimap();
                     PO.ready = true;
                     $('#homepage').addClass('hide');
                     $('#maingame').removeClass('hide');
@@ -95,17 +98,19 @@ class WebSocketClass {
                 var x = new Int8Array(d);
 
                 if(x[0] == 6){
+                    Game.data.oldPlayers.minimap = Game.data.players.minimap;
                     Game.data.players.minimap = WS.unpackBinary(d, 16);
                 }
 
                 if(x[0] == 7){// players location and direction
+                    Game.data.oldPlayers.tick = Game.data.players.tick;
                     Game.data.players.tick = WS.unpackBinary(d, 16);
-                    Game.draw.players();
+                    //Game.draw.players();
                 }
 
                 if(x[0] == 8){// laser location
                     Game.data.lasers = Game.data.lasers.concat(WS.unpackBinary(d, 16));
-                    Game.draw.lasers();
+                    //Game.draw.lasers();
                 }
 
                 if(x[0] == 9){// block change
@@ -116,6 +121,7 @@ class WebSocketClass {
                         Game.data.map[mapY][mapX] = e[2];
                     });
                     Game.draw.map();
+                    Game.draw.minimap();
                 }
 
             }
@@ -269,8 +275,11 @@ class GameClass{
         this.data.config = {};
         this.data.map = [];
         this.data.players = {tick: [], list: [], minimap: []};
+        this.data.oldPlayers = {tick: [], list: [], minimap: []};// one tick behind for smoothing the frames
         this.data.lasers = [];
         this.data.myId = 0;
+        this.data.serverTick = 1000;// miliseconds per server tick, replaced by actual server tick rate
+        this.data.minimapTick = 1000;// miliseconds per server tick, replaced by actual server tick rate
 
         // Render Layers
         this.render = {};
@@ -363,8 +372,6 @@ class GameClass{
 
                 });
             });
-
-            this.draw.minimap();// tag along
         };
         this.draw.minimap = ()=>{
             var blocksize = this.rendererMinimap.baseResolution.width / this.data.map.length;
@@ -407,7 +414,29 @@ class GameClass{
                 var offset = {x: e[1], y: e[2], r: e[3]/1000};
                 var id = e[0];
                 var player = this.data.players.list['p' + id];
+                var drawDate = Date.now();
                 //id x y rotation health level
+
+                // Player ship
+                this.render.players.beginFill(this.color.numToColor(player.color));
+                this.render.players.lineStyle(6, 0xffffff, 1);
+                this.render.players.moveTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipX.left * Math.cos(offset.r) - shipY.left * Math.sin(offset.r)), offset.y  + (shipX.left * Math.sin(offset.r) + shipY.left * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipX.right * Math.cos(offset.r) - shipY.right * Math.sin(offset.r)), offset.y  + (shipX.right * Math.sin(offset.r) + shipY.right * Math.cos(offset.r)));
+                this.render.players.lineTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
+                this.render.players.endFill();
+
+
+                // check for old data to smooth with
+                this.data.oldPlayers.tick.forEach((ele, ind)=>{
+                    if(e[0] == ele[0]){// same player
+                        offset = {
+                            x: Math.floor(Lib.betweenTwoNum(ele[1], e[1], 1 - (drawDate - e[e.length - 1]) / this.data.serverTick)),
+                            y: Math.floor(Lib.betweenTwoNum(ele[2], e[2], 1 - (drawDate - e[e.length - 1]) / this.data.serverTick)),
+                            r: offset.r
+                        };
+                    }
+                });
 
                 // Add more text objets if needed
                 if(typeof this.render.names[i] == 'undefined'){
@@ -449,21 +478,32 @@ class GameClass{
                     this.render.camera.position.y = -offset.y + Game.view.y / 2;
                 }
             });
-
-            this.draw.miniplayers();
         };
         this.draw.miniplayers = ()=>{
-
             var blocksize = this.rendererMinimap.baseResolution.width / this.data.map.length;
             var scale = blocksize / this.data.config.blocksize;
 
             this.render.miniplayers.clear();
-            var player = this.data.players.list['p' + Game.data.myId];
+            var player = this.data.players.list['p' + this.data.myId];
+            var drawDate = Date.now();
 
             // Draw Other players
             this.data.players.minimap.forEach((e,i)=>{
+
                 let offset = {x: e[0] * scale, y: e[1] * scale};
-                if(e[2] == Game.data.myId){
+
+                // check for old data to smooth with
+                this.data.oldPlayers.minimap.forEach((ele, ind)=>{
+                    if(e[2] == ele[2]){// same player
+                        offset = {
+                            x: Math.floor(Lib.betweenTwoNum(ele[0], e[0], 1 - (drawDate - e[e.length - 1]) / this.data.minimapTick) * scale),
+                            y: Math.floor(Lib.betweenTwoNum(ele[1], e[1], 1 - (drawDate - e[e.length - 1]) / this.data.minimapTick) * scale)
+                        };
+
+                    }
+                });
+
+                if(e[2] == this.data.myId){
                     // Draw your player
                     this.render.miniplayers.beginFill(this.color.numToColor(player.color));
                     this.render.miniplayers.lineStyle(4, 0xffffff, 1);
@@ -619,6 +659,8 @@ class GameClass{
     animate(){
         requestAnimationFrame(()=>{this.animate()});
         this.draw.lasers();
+        this.draw.players();
+        this.draw.miniplayers();
         this.renderer.render(this.render.world);
         this.rendererMinimap.render(this.render.miniworld);
     }
