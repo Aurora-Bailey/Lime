@@ -94,6 +94,10 @@ class WebSocketClass {
             }else{
                 var x = new Int8Array(d);
 
+                if(x[0] == 6){
+                    Game.data.players.minimap = WS.unpackBinary(d, 16);
+                }
+
                 if(x[0] == 7){// players location and direction
                     Game.data.players.tick = WS.unpackBinary(d, 16);
                     Game.draw.players();
@@ -264,7 +268,7 @@ class GameClass{
         this.data = {};
         this.data.config = {};
         this.data.map = [];
-        this.data.players = {tick: [], list: []};
+        this.data.players = {tick: [], list: [], minimap: []};
         this.data.lasers = [];
         this.data.myId = 0;
 
@@ -430,7 +434,6 @@ class GameClass{
 
                 // Player ship
                 this.render.players.beginFill(this.color.numToColor(player.color));
-                this.render.players.alpha = 1;
                 this.render.players.lineStyle(6, 0xffffff, 1);
                 this.render.players.moveTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
                 this.render.players.lineTo(offset.x + (shipX.left * Math.cos(offset.r) - shipY.left * Math.sin(offset.r)), offset.y  + (shipX.left * Math.sin(offset.r) + shipY.left * Math.cos(offset.r)));
@@ -455,25 +458,24 @@ class GameClass{
             var scale = blocksize / this.data.config.blocksize;
 
             this.render.miniplayers.clear();
+            var player = this.data.players.list['p' + Game.data.myId];
 
-            this.data.players.tick.forEach((e,i)=>{
-                if(e[4] == 0) return false;// skip dead players
+            this.data.players.minimap.forEach((e,i)=>{
+                let offset = {x: e[0] * scale, y: e[1] * scale};
 
-                // only dray player for now
-                if(e[0] == this.data.myId){
-                    var offset = {x: e[1] * scale, y: e[2] * scale};
-                    var id = e[0];
-                    var player = this.data.players.list['p' + id];
-                    //id x y rotation health level
-
-                    // Player ship
-                    this.render.miniplayers.beginFill(this.color.numToColor(player.color));
-                    this.render.miniplayers.alpha = 1;
-                    this.render.miniplayers.lineStyle(4, 0xffffff, 1);
-                    this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
-                    this.render.miniplayers.endFill();
-                }
+                // Player ship
+                this.render.miniplayers.beginFill(this.color.numToColor(player.color));
+                this.render.miniplayers.lineStyle(4, 0xffffff, 1);
+                this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
+                this.render.miniplayers.endFill();
             });
+
+            // Draw your player
+            let offset = {x: player.x * scale, y: player.y * scale};
+            this.render.miniplayers.beginFill(this.color.numToColor(player.color));
+            this.render.miniplayers.lineStyle(4, 0xffffff, 1);
+            this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
+            this.render.miniplayers.endFill();
 
         };
         this.draw.lasers = ()=>{

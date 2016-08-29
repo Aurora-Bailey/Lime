@@ -800,6 +800,38 @@ if (cluster.isMaster) {
             }
 
 
+            // Minimap
+            //executes twice per second
+            if (this.loopCount % (250 / this.loopDelay) == 0) {
+                // Get x,y for minimap
+                var minimapColors = [];
+                for(let key in this.players) {
+                    if(!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                    if(this.players[key].health == 0) continue;// skip dead players
+                    let color = this.players[key].color;
+                    if(typeof minimapColors[color] == 'undefined')
+                        minimapColors[color] = [];
+
+                    minimapColors[color].push([Math.floor(this.players[key].x), Math.floor(this.players[key].y)]);
+                }
+                var minimapData = [];
+                minimapColors.forEach((e,i)=>{
+                    minimapData[i] = this.sendDataToBinary(6, minimapColors[i], 16);
+                });
+
+                for(let key in this.players) {
+                    if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                    let color = this.players[key].color;
+                    if(this.players[key].connected && this.players[key].health != 0 && typeof minimapData[color] !== 'undefined')
+                        this.players[key].ws.sendBinary(minimapData[color]);
+
+                }
+            }
+
+
+
 
 
             // === Server load
