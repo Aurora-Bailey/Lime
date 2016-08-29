@@ -417,22 +417,12 @@ class GameClass{
                 var drawDate = Date.now();
                 //id x y rotation health level
 
-                // Player ship
-                this.render.players.beginFill(this.color.numToColor(player.color));
-                this.render.players.lineStyle(6, 0xffffff, 1);
-                this.render.players.moveTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
-                this.render.players.lineTo(offset.x + (shipX.left * Math.cos(offset.r) - shipY.left * Math.sin(offset.r)), offset.y  + (shipX.left * Math.sin(offset.r) + shipY.left * Math.cos(offset.r)));
-                this.render.players.lineTo(offset.x + (shipX.right * Math.cos(offset.r) - shipY.right * Math.sin(offset.r)), offset.y  + (shipX.right * Math.sin(offset.r) + shipY.right * Math.cos(offset.r)));
-                this.render.players.lineTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
-                this.render.players.endFill();
-
-
                 // check for old data to smooth with
                 this.data.oldPlayers.tick.forEach((ele, ind)=>{
                     if(e[0] == ele[0]){// same player
                         offset = {
-                            x: Math.floor(Lib.betweenTwoNum(ele[1], e[1], 1 - (drawDate - e[e.length - 1]) / this.data.serverTick)),
-                            y: Math.floor(Lib.betweenTwoNum(ele[2], e[2], 1 - (drawDate - e[e.length - 1]) / this.data.serverTick)),
+                            x: Math.floor(Lib.betweenTwoNum(ele[1], e[1], (drawDate - e[e.length - 1]) / this.data.serverTick)),
+                            y: Math.floor(Lib.betweenTwoNum(ele[2], e[2], (drawDate - e[e.length - 1]) / this.data.serverTick)),
                             r: offset.r
                         };
                     }
@@ -496,8 +486,8 @@ class GameClass{
                 this.data.oldPlayers.minimap.forEach((ele, ind)=>{
                     if(e[2] == ele[2]){// same player
                         offset = {
-                            x: Math.floor(Lib.betweenTwoNum(ele[0], e[0], 1 - (drawDate - e[e.length - 1]) / this.data.minimapTick) * scale),
-                            y: Math.floor(Lib.betweenTwoNum(ele[1], e[1], 1 - (drawDate - e[e.length - 1]) / this.data.minimapTick) * scale)
+                            x: Math.floor(Lib.betweenTwoNum(ele[0], e[0], (drawDate - e[e.length - 1]) / this.data.minimapTick) * scale),
+                            y: Math.floor(Lib.betweenTwoNum(ele[1], e[1], (drawDate - e[e.length - 1]) / this.data.minimapTick) * scale)
                         };
 
                     }
