@@ -813,7 +813,7 @@ if (cluster.isMaster) {
                     if(typeof minimapColors[color] == 'undefined')
                         minimapColors[color] = [];
 
-                    minimapColors[color].push([Math.floor(this.players[key].x), Math.floor(this.players[key].y)]);
+                    minimapColors[color].push([Math.floor(this.players[key].x), Math.floor(this.players[key].y), this.players[key].id]);
                 }
                 var minimapData = [];
                 minimapColors.forEach((e,i)=>{

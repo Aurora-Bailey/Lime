@@ -460,22 +460,30 @@ class GameClass{
             this.render.miniplayers.clear();
             var player = this.data.players.list['p' + Game.data.myId];
 
+            // Draw Other players
             this.data.players.minimap.forEach((e,i)=>{
                 let offset = {x: e[0] * scale, y: e[1] * scale};
+                if(e[2] == Game.data.myId){
+                    // Draw your player
+                    this.render.miniplayers.beginFill(this.color.numToColor(player.color));
+                    this.render.miniplayers.lineStyle(4, 0xffffff, 1);
+                    this.render.miniplayers.moveTo(offset.x, offset.y - 13.2);
+                    this.render.miniplayers.lineTo(offset.x + 10, offset.y + 6.6);
+                    this.render.miniplayers.lineTo(offset.x - 10, offset.y + 6.6);
+                    this.render.miniplayers.lineTo(offset.x, offset.y - 13.2);
+                    this.render.miniplayers.endFill();
+                }else{
+                    // Other players
+                    this.render.miniplayers.beginFill(this.color.numToColor(player.color));
+                    this.render.miniplayers.lineStyle(4, 0xffffff, 1);
+                    this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
+                    this.render.miniplayers.endFill();
+                }
 
-                // Player ship
-                this.render.miniplayers.beginFill(this.color.numToColor(player.color));
-                this.render.miniplayers.lineStyle(4, 0xffffff, 1);
-                this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
-                this.render.miniplayers.endFill();
+
             });
 
-            // Draw your player
-            let offset = {x: player.x * scale, y: player.y * scale};
-            this.render.miniplayers.beginFill(this.color.numToColor(player.color));
-            this.render.miniplayers.lineStyle(4, 0xffffff, 1);
-            this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
-            this.render.miniplayers.endFill();
+
 
         };
         this.draw.lasers = ()=>{
