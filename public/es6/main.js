@@ -50,42 +50,22 @@ class WebSocketClass {
                     PO.ready = true;
                     $('#homepage').addClass('hide');
                     $('#maingame').removeClass('hide');
-                    $('#chat-log').removeClass('hide');
-                    $('#chat-log').html('').prepend(
-                        $('<div />')
-                            .addClass('game')
-                            .text("Press [Enter] to open/close chat.")
-                    );
-                    $('#chat-log').prepend(
-                        $('<div />')
-                            .addClass('game')
-                            .text("You can only chat with " + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color) + " players.")
-                    );
+                    $('#chat-log').removeClass('hide').html('');
+                    Game.chatMessage("Press [Enter] to open/close chat.", 'game');
+                    Game.chatMessage("You can only chat with " + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color) + " players.", 'game');
                     var playerId = d.id;
                 }else if(d.m == 'dead'){
                     $('#respawn').removeClass('hide');
-                    $('#chat-log').prepend(
-                        $('<div />')
-                            .addClass('game')
-                            .text("You're Dead!")
-                    );
+                    Game.chatMessage("You're Dead!", 'game');
                 }else if(d.m == "killed"){
-                    $('#chat-log').prepend(
-                        $('<div />')
-                            .addClass('game')
-                            .text("You killed '" + d.v + "'")
-                    );
+                    Game.chatMessage("You killed '" + d.v + "'", 'game');
                 }else if(d.m == "dcplayer"){
                     if(typeof Game.data.players.list['p' + d.v] !== 'undefined')
                         delete Game.data.players.list['p' + d.v];
                 }else if(d.m == "newplayer"){
                     Game.data.players.list['p' + d.v.id] = d.v;
                 }else if(d.m == "oom"){
-                    $('#chat-log').prepend(
-                        $('<div />')
-                            .addClass('game')
-                            .text("You've sent too many messages (try again in 10 seconds)")
-                    );
+                    Game.chatMessage("You've sent too many messages (try again in 10 seconds)", 'game');
                 }else if(d.m == "tm"){// Team Message
                     $('#chat-log').prepend(
                         $('<div />')
@@ -93,6 +73,8 @@ class WebSocketClass {
                             .addClass(Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color).toLowerCase())
                             .text('[ ' + Game.data.players.list['p' + d.id].name + ' ]  ' + d.v)
                     );
+                }else if(d.m == "ping"){
+                    Game.chatMessage("Ping: " + (Date.now() - d.v) + "ms", 'game');
                 }
             }else{
                 var x = new Int8Array(d);
@@ -277,6 +259,9 @@ class GameClass{
         this.data.config.health.style = 'circle';
         this.data.config.health.alpha = 0.5;
         this.data.config.health.color = 'player';
+        this.data.config.background = {};
+        this.data.config.background.style = 'colorfog';
+        this.data.config.background.color = 'dark';
         this.data.map = [];
         this.data.players = {tick: [], list: [], minimap: []};
         this.data.oldPlayers = {tick: [], list: [], minimap: []};// one tick behind for smoothing the frames
@@ -300,8 +285,9 @@ class GameClass{
         this.render.miniplayers = new PIXI.Graphics();
 
         // Background for the map layer
-        this.render.backgroundImage = PIXI.Texture.fromImage('images/colorfog.jpg');
-        this.render.background = new PIXI.extras.TilingSprite(this.render.backgroundImage, 1000, 1000);
+        this.render.backgroundImageDark = PIXI.Texture.fromImage('images/colorfog.jpg');
+        this.render.backgroundImageLight = PIXI.Texture.fromImage('images/colorfoglight.jpg');
+        this.render.background = new PIXI.extras.TilingSprite(this.render.backgroundImageDark, 1000, 1000);
 
         // Player names
         this.render.names = [];
@@ -322,51 +308,96 @@ class GameClass{
         this.draw = {};
         this.draw.map = ()=>{
             var blocksize = this.data.config.blocksize;
+            var mapPixels = blocksize * this.data.map.length;
+            var mapLength = this.data.map.length;
 
-            this.render.background._width = blocksize * this.data.map.length;
-            this.render.background._height = blocksize * this.data.map.length;
+            this.render.background.width = mapPixels;
+            this.render.background.height = mapPixels;
 
             this.render.map.clear();
 
+            var mapColor = {};
+            if(this.data.config.background.color == 'light'){
+                this.render.background.texture = this.render.backgroundImageLight;
+                this.renderer.backgroundColor = 0xffffff;
+                mapColor.outline = '0x999999';
+                mapColor.mainGridLine = '0xCCCCCC';
+                mapColor.sideGridLine = '0xDDDDDD';
+                mapColor.colorGrid = '0xEEEEEE';
+            }else{
+                this.render.background.texture = this.render.backgroundImageDark;
+                this.renderer.backgroundColor = 0x000000;
+                mapColor.outline = '0xffffff';
+                mapColor.mainGridLine = '0x333333';
+                mapColor.sideGridLine = '0x222222';
+                mapColor.colorGrid = '0x111111';
+            }
+
+
+
+            if(this.data.config.background.style == 'grid'){
+                this.render.map.beginFill(mapColor.colorGrid);
+                this.render.map.lineStyle(0, 0xffffff, 1);
+                this.render.map.drawRect(0,0, mapPixels, mapPixels);
+                this.render.map.endFill();
+
+
+
+                for(let i=0; i<mapLength; i++){
+                    this.render.map.lineStyle(4, mapColor.mainGridLine, 1);
+                    this.render.map.moveTo(i * blocksize, 0);
+                    this.render.map.lineTo(i * blocksize, mapPixels);
+
+                    this.render.map.lineStyle(4, mapColor.sideGridLine, 1);
+                    this.render.map.moveTo(i * blocksize + Math.floor(blocksize * 0.33), 0);
+                    this.render.map.lineTo(i * blocksize + Math.floor(blocksize * 0.33), mapPixels);
+
+                    this.render.map.moveTo(i * blocksize + Math.floor(blocksize * 0.66), 0);
+                    this.render.map.lineTo(i * blocksize + Math.floor(blocksize * 0.66), mapPixels);
+                }
+                for(let k=0; k<mapLength; k++){
+                    this.render.map.lineStyle(4, mapColor.mainGridLine, 1);
+                    this.render.map.moveTo(0, k * blocksize);
+                    this.render.map.lineTo(mapPixels, k * blocksize);
+
+                    this.render.map.lineStyle(4, mapColor.sideGridLine, 1);
+                    this.render.map.moveTo(0, k * blocksize + Math.floor(blocksize * 0.33));
+                    this.render.map.lineTo(mapPixels, k * blocksize + Math.floor(blocksize * 0.33));
+
+                    this.render.map.moveTo(0, k * blocksize + Math.floor(blocksize * 0.66));
+                    this.render.map.lineTo(mapPixels, k * blocksize + Math.floor(blocksize * 0.66));
+                }
+            }
+
             this.data.map.forEach((element, index)=>{
+
                 element.forEach((e, i)=>{
                     if(e != 0){
                         var offset = {x: i * blocksize, y: index * blocksize};
                         var border = 6;
-
-                        this.render.map.beginFill('0xffffff');
-                        this.render.map.alpha = 1;
                         this.render.map.lineStyle(0, 0xffffff, 1);
-                        this.render.map.moveTo(offset.x + 0, offset.y + 0);
-                        this.render.map.lineTo(offset.x + 0, offset.y + blocksize);
-                        this.render.map.lineTo(offset.x + blocksize, offset.y + blocksize);
-                        this.render.map.lineTo(offset.x + blocksize, offset.y + 0);
-                        this.render.map.lineTo(offset.x + 0, offset.y + 0);
+
+                        this.render.map.beginFill(mapColor.outline);
+                        this.render.map.drawRect(offset.x, offset.y, blocksize, blocksize);
                         this.render.map.endFill();
 
                         this.render.map.beginFill(this.color.numToColor(e));
-                        this.render.map.alpha = 1;
-                        this.render.map.lineStyle(0, 0xffffff, 1);
-                        this.render.map.moveTo(offset.x + border, offset.y + border);
-                        this.render.map.lineTo(offset.x + border, offset.y + blocksize - border);
-                        this.render.map.lineTo(offset.x + blocksize - border, offset.y + blocksize -border);
-                        this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
-                        this.render.map.lineTo(offset.x + border, offset.y + border);
+                        this.render.map.drawRect(offset.x + border, offset.y + border, blocksize - border*2, blocksize - border*2);
                         this.render.map.endFill();
 
 
+                        // Draw stuff on bonus blocks
+                        this.render.map.lineStyle(20, 0x999999, 1);
                         if(e==21){// health
-                            this.render.map.lineStyle(20, 0x000000, 1);
+
                             this.render.map.moveTo(offset.x + blocksize/2, offset.y + blocksize*0.25);
                             this.render.map.lineTo(offset.x + blocksize/2, offset.y + blocksize*0.75);
                             this.render.map.moveTo(offset.x + blocksize*0.25, offset.y + blocksize/2);
                             this.render.map.lineTo(offset.x + blocksize*0.75, offset.y + blocksize/2);
                         }else if(e==22){// warp
-                            this.render.map.lineStyle(20, 0x000000, 1);
                             this.render.map.drawCircle(offset.x + blocksize/2, offset.y + blocksize/2, blocksize/3);
                             this.render.map.drawCircle(offset.x + blocksize/2, offset.y + blocksize/2, blocksize/5);
                         }else if(e==23){// thrust
-                            this.render.map.lineStyle(20, 0x000000, 1);
                             this.render.map.moveTo(offset.x + blocksize*0.15, offset.y + blocksize*0.70);
                             this.render.map.bezierCurveTo(
                                 offset.x + blocksize*0.3, offset.y + blocksize*0.3,
@@ -374,7 +405,6 @@ class GameClass{
                                 offset.x + blocksize*0.85, offset.y + blocksize*0.30
                             );
                         }else if(e==24){// weapon
-                            this.render.map.lineStyle(20, 0x000000, 1);
                             this.render.map.moveTo(offset.x + blocksize*0.15, offset.y + blocksize*0.60);
                             this.render.map.lineTo(offset.x + blocksize*0.65, offset.y + blocksize*0.60);
                             this.render.map.moveTo(offset.x + blocksize*0.35, offset.y + blocksize*0.40);
@@ -398,11 +428,7 @@ class GameClass{
                         this.render.minimap.beginFill('0x337733');
                         this.render.minimap.alpha = 1;
                         this.render.minimap.lineStyle(0, 0xffffff, 1);
-                        this.render.minimap.moveTo(offset.x + 0, offset.y + 0);
-                        this.render.minimap.lineTo(offset.x + 0, offset.y + blocksize);
-                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + blocksize);
-                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + 0);
-                        this.render.minimap.lineTo(offset.x + 0, offset.y + 0);
+                        this.render.minimap.drawRect(offset.x, offset.y, blocksize, blocksize);
                         this.render.minimap.endFill();
                     }else if(e != 0){
                         let offset = {x: i * blocksize, y: index * blocksize};
@@ -410,11 +436,7 @@ class GameClass{
                         this.render.minimap.beginFill('0x333333');
                         this.render.minimap.alpha = 1;
                         this.render.minimap.lineStyle(0, 0xffffff, 1);
-                        this.render.minimap.moveTo(offset.x + 0, offset.y + 0);
-                        this.render.minimap.lineTo(offset.x + 0, offset.y + blocksize);
-                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + blocksize);
-                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + 0);
-                        this.render.minimap.lineTo(offset.x + 0, offset.y + 0);
+                        this.render.minimap.drawRect(offset.x, offset.y, blocksize, blocksize);
                         this.render.minimap.endFill();
                     }
 
@@ -635,7 +657,7 @@ class GameClass{
             return "0x" + this.color.componentToHex(r) + this.color.componentToHex(g) + this.color.componentToHex(b);
         };
         this.color.numToColor = (num)=>{
-            var colors = ['0xffffff','0x800080','0x0000ff','0x00ff00','0xffff00','0xe67e22','0xff0000'];
+            var colors = ['0xffffff','0x800080','0x0000ff','0x00ff00','0xffff00','0xeb9447','0xff0000'];
 
             if(typeof colors[num] !== 'undefined')
                 return colors[num];
@@ -748,11 +770,32 @@ class GameClass{
                         this.data.config.health.color = 'player';
 
                 }
+            }else if(parts[1] == 'background'){
+                if(parts[2] == 'style'){
+                    if(parts[3] == 'grid')
+                        this.data.config.background.style = 'grid';
+                    else
+                        this.data.config.background.style = 'colorfog';
+
+                    this.draw.map();
+                }else if(parts[2] == 'color'){
+                    if(parts[3] == 'light')
+                        this.data.config.background.color = 'light';
+                    else
+                        this.data.config.background.color = 'dark';
+
+                    this.draw.map();
+                }
+
             }else if(parts[1] == 'zoom'){
                 let num = parseInt(parts[2]);
                 if(!isNaN(num))
                     this.zoom(num);
 
+            }else if(parts[1] == 'id'){
+                Game.chatMessage("Your ID is: " + this.data.myId, 'game');
+            }else if(parts[1] == 'ping'){
+                WS.sendObj({m: 'ping', v: Date.now()});
             }
 
             return true;
@@ -760,6 +803,14 @@ class GameClass{
 
 
         return false;
+    }
+
+    chatMessage(msg, type){
+        $('#chat-log').prepend(
+            $('<div />')
+                .addClass(type)
+                .text(msg)
+        );
     }
 
     animate(){

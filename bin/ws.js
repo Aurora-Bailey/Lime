@@ -167,6 +167,8 @@ if (cluster.isMaster) {
                         Game.players['p' + ws.playerId].velocity.x = 0;
                         Game.players['p' + ws.playerId].velocity.y = 0;
                     }
+                }else if(d.m == 'ping'){
+                    ws.sendObj(d);
                 }
             }
             catch(err){
