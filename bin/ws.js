@@ -121,10 +121,12 @@ if (cluster.isMaster) {
                         collisionPadding: 40, // distance from center point to start collision detection
                         velocity: {x: 0, y: 0},
                         rank: 0,
+                        score: 0,
                         color: Math.ceil(Math.random() * 6),
                         level: 0,
                         health: 100,
                         maxHealth: 100,
+                        defense: 1, // 0=no damage, 1=all damage
                         connected: true,
                         id: tryId,
                         name: (d.n == ''? 'Nameless' + tryId: d.n),
@@ -139,6 +141,7 @@ if (cluster.isMaster) {
                         weaponLockout: Date.now(),
                         weaponDistance: 1500,
                         weaponDamage: 10,
+                        weaponHeal: 10,
                         bonus: {thruster: false, weapon: false},
                         bonusTimeout: 5000, //miliseconds
                         lastActive: Date.now(),
@@ -146,6 +149,20 @@ if (cluster.isMaster) {
                         messageBank: 5,
                         messageLast: Date.now(),
                         messageCount: 0};
+
+                    // Mod stats for class
+                    if(Game.players['p' + tryId].type == 0){// Strength type
+                        Game.players['p' + tryId].weaponDamage = Math.floor(Game.players['p' + tryId].weaponDamage * 1.5);
+                    }else if(Game.players['p' + tryId].type == 1){// Heal type
+                        Game.players['p' + tryId].weaponDamage = Math.floor(Game.players['p' + tryId].weaponDamage * 0.66);
+                        Game.players['p' + tryId].weaponSpeed = Math.floor(Game.players['p' + tryId].weaponSpeed / 1.5);
+                    }else if(Game.players['p' + tryId].type == 2){// Tank type
+                        Game.players['p' + tryId].defense *= 0.66;
+                    }
+
+
+
+
                     ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map, tick: Game.loopDelay, minitick: Game.minimapDelay});
                     wss.broadcast(JSON.stringify({m: 'newplayer', v: Game.getSinglePlayer(tryId)}));
 
@@ -741,11 +758,11 @@ if (cluster.isMaster) {
 
                         if(playerHit !== false){
                             if(this.players['p' + playerHit].color == this.players[key].color){// heal
-                                this.players['p' + playerHit].health += this.players[key].weaponDamage;
+                                this.players['p' + playerHit].health += this.players[key].weaponHeal;
                                 if(this.players['p' + playerHit].health > this.players['p' + playerHit].maxHealth)
                                     this.players['p' + playerHit].health = this.players['p' + playerHit].maxHealth;
                             }else{// damage
-                                this.players['p' + playerHit].health -= this.players[key].weaponDamage;
+                                this.players['p' + playerHit].health -= this.players[key].weaponDamage * this.players['p' + playerHit].defense;
                                 if(this.players['p' + playerHit].health <= 0){// death
 
                                     this.players['p' + playerHit].health = 0;

@@ -260,7 +260,7 @@ class GameClass{
         this.data.config.health.alpha = 0.5;
         this.data.config.health.color = 'player';
         this.data.config.background = {};
-        this.data.config.background.style = 'colorfog';
+        this.data.config.background.style = 'grid';
         this.data.config.background.color = 'dark';
         this.data.map = [];
         this.data.players = {tick: [], list: [], minimap: []};
