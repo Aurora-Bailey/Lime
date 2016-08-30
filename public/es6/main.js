@@ -79,6 +79,11 @@ class WebSocketClass {
             }else{
                 var x = new Int8Array(d);
 
+                if(x[0] == 5){
+                    var asdf = WS.unpackBinary(d, 16);
+                    console.log(asdf);
+                }
+
                 if(x[0] == 6){
                     Game.data.oldPlayers.minimap = Game.data.players.minimap;
                     Game.data.players.minimap = WS.unpackBinary(d, 16);
@@ -460,6 +465,7 @@ class GameClass{
                 var offset = {x: e[1], y: e[2], r: e[3]/1000};
                 var id = e[0];
                 var player = this.data.players.list['p' + id];
+                var healthPercent = Math.floor(e[4]/10);// from 1000 to 100 for drawing
                 var drawDate = Date.now();
                 //id x y rotation health level
 
@@ -527,7 +533,7 @@ class GameClass{
 
                     this.render.players.beginFill(healthColor.full, this.data.config.health.alpha);
                     this.render.players.lineStyle(3, healthColor.outline, this.data.config.health.alpha);
-                    this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, e[4] * healthWidthMult, 12);
+                    this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, healthPercent * healthWidthMult, 12);
                     this.render.players.endFill();
                 } else {// Draw Circle
                     // black border
@@ -537,12 +543,12 @@ class GameClass{
                     // Green
                     this.render.players.lineStyle(10, healthColor.full, this.data.config.health.alpha);
                     this.render.players.moveTo(offset.x + 80, offset.y);
-                    this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (e[4]/100), false);
+                    this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (healthPercent/100), false);
 
                     // Red
                     this.render.players.lineStyle(10, healthColor.empty, this.data.config.health.alpha);
                     this.render.players.moveTo(offset.x + 80, offset.y);
-                    this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (e[4]/100), true);
+                    this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (healthPercent/100), true);
                 }
 
 

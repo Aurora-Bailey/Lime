@@ -121,11 +121,11 @@ if (cluster.isMaster) {
                         collisionPadding: 40, // distance from center point to start collision detection
                         velocity: {x: 0, y: 0},
                         rank: 0,
-                        score: 0,
+                        score: 10,
                         color: Math.ceil(Math.random() * 6),
                         level: 0,
-                        health: 100,
-                        maxHealth: 100,
+                        health: 1000,
+                        maxHealth: 1000,
                         defense: 1, // 0=no damage, 1=all damage
                         connected: true,
                         id: tryId,
@@ -140,8 +140,8 @@ if (cluster.isMaster) {
                         weaponSpeed: 1000/2,
                         weaponLockout: Date.now(),
                         weaponDistance: 1500,
-                        weaponDamage: 10,
-                        weaponHeal: 10,
+                        weaponDamage: 100,
+                        weaponHeal: 100,
                         bonus: {thruster: false, weapon: false},
                         bonusTimeout: 5000, //miliseconds
                         lastActive: Date.now(),
@@ -160,8 +160,11 @@ if (cluster.isMaster) {
                         Game.players['p' + tryId].defense *= 0.66;
                     }
 
+                    // update player number
+                    Game.numPlayers++;
 
-
+                    // Generate new rank list
+                    Game.genRankList = true;
 
                     ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map, tick: Game.loopDelay, minitick: Game.minimapDelay});
                     wss.broadcast(JSON.stringify({m: 'newplayer', v: Game.getSinglePlayer(tryId)}));
@@ -237,11 +240,15 @@ if (cluster.isMaster) {
         static init() {
             this.ready = false;
             // Game data
+            this.genRankList = false;
+            this.maxPlayers = 60;
+            this.numPlayers = 0;
             this.players = {};
 
             //Map
             this.mapConfig = {};
-            this.mapConfig.numBlocks = 80;//(150 MAX because of int 16 ArrayBuffer  150*blockSize 200 = 30,000 this leaves room for lasers to go into the black)
+            this.mapConfig.blocksPerPerson = 100;
+            this.mapConfig.numBlocks = Math.floor(Math.sqrt(this.maxPlayers * this.mapConfig.blocksPerPerson));//(150 MAX because of int 16 ArrayBuffer  150*blockSize 200 = 30,000 this leaves room for lasers to go into the black)
             this.mapConfig.width = this.mapConfig.numBlocks;//all maps will have the same width and height (square)
             this.mapConfig.height = this.mapConfig.numBlocks;//blocks
             this.mapConfig.area = this.mapConfig.numBlocks * this.mapConfig.numBlocks;//blocks
@@ -308,6 +315,7 @@ if (cluster.isMaster) {
         static removePlayer(id){
             // delete player from server
             delete this.players['p' + id];
+            this.numPlayers--;
             // delete player from client
             wss.broadcast(JSON.stringify({m: 'dcplayer', v: id}));
         }
@@ -345,8 +353,7 @@ if (cluster.isMaster) {
                     Math.floor(this.players[key].x),
                     Math.floor(this.players[key].y),
                     this.players[key].direction,
-                    this.players[key].health,
-                    this.players[key].level])
+                    this.players[key].health])
             }
             return x;
         }
@@ -407,6 +414,53 @@ if (cluster.isMaster) {
                 return 'tps: ' + this.serverLoad.tps + ' Average: ' + this.serverLoad.current + '% High: ' + this.serverLoad.high + '% Low: ' + this.serverLoad.low + '% (percent of one core used per tick)';
         }
 
+        static killPrize(x, y, distance, color, score){
+            for(let key in this.players){
+                if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                if(this.players[key].color == color){
+                    if(Lib.distance(x, y, this.players[key].x, this.players[key].y) < distance)
+                        this.players[key].score = Math.floor(this.players[key].score + score);
+                }
+            }
+        }
+
+        static rankPlayers(){
+            // sort players by score
+            // update rank to the sort order
+            // update player level based on rank
+            // send to everyone on player join and death
+            var sortingArr = [];
+            for(let key in this.players){
+                if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+                sortingArr.push({score: this.players[key].score, player: this.players[key]});
+            }
+
+            sortingArr.sort(function(a, b){
+                if(a.score < b.score)
+                    return 1;
+                if (a.score > b.score)
+                    return -1;
+                return 0;// a must be equal to b
+            });
+
+            sortingArr.forEach((e, i)=>{
+                sortingArr[i].player.rank = i + 1;// +1 to offset index of 0
+            });
+
+
+            var levelMax = 1000;
+            var step = levelMax/this.maxPlayers;
+            var idLevelScoreSend = [];
+            for(let key in this.players){
+                if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                this.players[key].level = Math.floor((this.numPlayers + 1 - this.players[key].rank) * step);
+                idLevelScoreSend.push([this.players[key].id, this.players[key].rank, this.players[key].level]);
+            }
+            return idLevelScoreSend;
+        }
+
         static loop() {
             setTimeout(()=> {
                 setTimeout(()=> {
@@ -426,6 +480,7 @@ if (cluster.isMaster) {
             // Main Code
             var laserList = [];
             var blocksChanged = [];
+            var rankList = [];
 
             //Update player location
             for(let key in this.players) {
@@ -758,31 +813,39 @@ if (cluster.isMaster) {
 
                         if(playerHit !== false){
                             if(this.players['p' + playerHit].color == this.players[key].color){// heal
-                                this.players['p' + playerHit].health += this.players[key].weaponHeal;
+                                this.players['p' + playerHit].health = Math.floor(this.players['p' + playerHit].health + this.players[key].weaponHeal);
                                 if(this.players['p' + playerHit].health > this.players['p' + playerHit].maxHealth)
                                     this.players['p' + playerHit].health = this.players['p' + playerHit].maxHealth;
                             }else{// damage
-                                this.players['p' + playerHit].health -= this.players[key].weaponDamage * this.players['p' + playerHit].defense;
+                                this.players['p' + playerHit].health = Math.floor(this.players['p' + playerHit].health - (this.players[key].weaponDamage * this.players['p' + playerHit].defense));
+
+
                                 if(this.players['p' + playerHit].health <= 0){// death
 
+                                    // killer prize
+                                    this.players[key].health = this.players[key].maxHealth;
+                                    this.killPrize(this.players[key].x, this.players[key].y, this.players[key].weaponDistance, this.players[key].color, this.players['p' + playerHit].score / 2);
+                                    if(this.players[key].connected)
+                                        this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
+
+                                    // Dead man
                                     this.players['p' + playerHit].health = 0;
                                     this.players['p' + playerHit].velocity.x = 0;
                                     this.players['p' + playerHit].velocity.y = 0;
+                                    this.players['p' + playerHit].score = 10;
                                     this.players['p' + playerHit].weapon = 2;
                                     this.players['p' + playerHit].thruster = 2;
                                     this.players['p' + playerHit].lastActive = Date.now();
                                     if(this.players['p' + playerHit].connected)
                                         this.players['p' + playerHit].ws.sendObj({m: 'dead'});
 
-                                    // set killers health to full
-                                    this.players[key].health = this.players[key].maxHealth;
-                                    if(this.players[key].connected)
-                                        this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
-
                                     // remove dc players on death
                                     if(this.players['p' + playerHit].connected == false){
                                         Game.removePlayer(playerHit);
                                     }
+
+                                    // process the new scores.
+                                    this.genRankList = true;
                                 }
                             }
 
@@ -834,12 +897,19 @@ if (cluster.isMaster) {
             }
 
 
-            // Send block changes
+            // Send block changes / level rank
+            if(this.genRankList === true){
+                rankList = this.rankPlayers();
+                this.genRankList = false;
+            }
             for(let key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
                 if(this.players[key].connected && blocksChanged.length > 0)
                     this.players[key].ws.sendBinary(this.sendDataToBinary(9, blocksChanged, 16));
+
+                if(this.players[key].connected && rankList.length > 0)// sent when someone joins or dies.
+                    this.players[key].ws.sendBinary(this.sendDataToBinary(5, rankList, 16));
 
             }
 
