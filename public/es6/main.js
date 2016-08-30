@@ -351,22 +351,30 @@ class GameClass{
                         this.render.map.endFill();
 
 
-                        if(e==21){
-                            this.render.map.lineStyle(10, 0x000000, 1);
-                            this.render.map.moveTo(offset.x + border, offset.y + border);
-                            this.render.map.lineTo(offset.x + blocksize - border, offset.y + blocksize -border);
-                        }else if(e==22){
-                            this.render.map.lineStyle(10, 0x000000, 1);
-                            this.render.map.moveTo(offset.x + blocksize - border, offset.y + blocksize -border);
-                            this.render.map.lineTo(offset.x + border, offset.y + border);
-                            this.render.map.moveTo(offset.x + border, offset.y + blocksize - border);
-                            this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
-                        }else if(e==23){
-                            this.render.map.lineStyle(10, 0x000000, 1);
-                            this.render.map.moveTo(offset.x + border, offset.y + blocksize - border);
-                            this.render.map.lineTo(offset.x + blocksize - border, offset.y + border);
-                        }else if(e==24){
-
+                        if(e==21){// health
+                            this.render.map.lineStyle(20, 0x000000, 1);
+                            this.render.map.moveTo(offset.x + blocksize/2, offset.y + blocksize*0.25);
+                            this.render.map.lineTo(offset.x + blocksize/2, offset.y + blocksize*0.75);
+                            this.render.map.moveTo(offset.x + blocksize*0.25, offset.y + blocksize/2);
+                            this.render.map.lineTo(offset.x + blocksize*0.75, offset.y + blocksize/2);
+                        }else if(e==22){// warp
+                            this.render.map.lineStyle(20, 0x000000, 1);
+                            this.render.map.drawCircle(offset.x + blocksize/2, offset.y + blocksize/2, blocksize/3);
+                            this.render.map.drawCircle(offset.x + blocksize/2, offset.y + blocksize/2, blocksize/5);
+                        }else if(e==23){// thrust
+                            this.render.map.lineStyle(20, 0x000000, 1);
+                            this.render.map.moveTo(offset.x + blocksize*0.15, offset.y + blocksize*0.70);
+                            this.render.map.bezierCurveTo(
+                                offset.x + blocksize*0.3, offset.y + blocksize*0.3,
+                                offset.x + blocksize*0.7, offset.y + blocksize*0.7,
+                                offset.x + blocksize*0.85, offset.y + blocksize*0.30
+                            );
+                        }else if(e==24){// weapon
+                            this.render.map.lineStyle(20, 0x000000, 1);
+                            this.render.map.moveTo(offset.x + blocksize*0.15, offset.y + blocksize*0.60);
+                            this.render.map.lineTo(offset.x + blocksize*0.65, offset.y + blocksize*0.60);
+                            this.render.map.moveTo(offset.x + blocksize*0.35, offset.y + blocksize*0.40);
+                            this.render.map.lineTo(offset.x + blocksize*0.85, offset.y + blocksize*0.40);
                         }
                     }
 
@@ -380,8 +388,20 @@ class GameClass{
 
             this.data.map.forEach((element, index)=>{
                 element.forEach((e, i)=>{
-                    if(e != 0){
-                        var offset = {x: i * blocksize, y: index * blocksize};
+                    if(e > 20 && e < 30){
+                        let offset = {x: i * blocksize, y: index * blocksize};
+
+                        this.render.minimap.beginFill('0x337733');
+                        this.render.minimap.alpha = 1;
+                        this.render.minimap.lineStyle(0, 0xffffff, 1);
+                        this.render.minimap.moveTo(offset.x + 0, offset.y + 0);
+                        this.render.minimap.lineTo(offset.x + 0, offset.y + blocksize);
+                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + blocksize);
+                        this.render.minimap.lineTo(offset.x + blocksize, offset.y + 0);
+                        this.render.minimap.lineTo(offset.x + 0, offset.y + 0);
+                        this.render.minimap.endFill();
+                    }else if(e != 0){
+                        let offset = {x: i * blocksize, y: index * blocksize};
 
                         this.render.minimap.beginFill('0x333333');
                         this.render.minimap.alpha = 1;
@@ -423,7 +443,7 @@ class GameClass{
                         offset = {
                             x: Math.floor(Lib.betweenTwoNum(ele[1], e[1], (drawDate - e[e.length - 1]) / this.data.serverTick)),
                             y: Math.floor(Lib.betweenTwoNum(ele[2], e[2], (drawDate - e[e.length - 1]) / this.data.serverTick)),
-                            r: offset.r
+                            r: offset.r // no smooting on direction for now
                         };
                     }
                 });
@@ -441,14 +461,15 @@ class GameClass{
                 this.render.names[i].position.y = offset.y - 100;
 
                 // Health bar
+                var healthWidthMult = 2;// streach health bar
                 this.render.players.beginFill('0xff0000');
                 this.render.players.lineStyle(3, 0x000000, 1);
-                this.render.players.drawRect(offset.x - 50, offset.y - 80, 100, 10);
+                this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, 100 * healthWidthMult, 10);
                 this.render.players.endFill();
 
                 this.render.players.beginFill('0x00ff00');
                 this.render.players.lineStyle(3, 0x000000, 1);
-                this.render.players.drawRect(offset.x - 50, offset.y - 80, e[4], 10);
+                this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, e[4] * healthWidthMult, 10);
                 this.render.players.endFill();
 
                 // Player ship
@@ -535,7 +556,7 @@ class GameClass{
             this.data.lasers.forEach((e,i)=>{
                 var offset = {x1: e[0], y1: e[1], x2: e[2], y2: e[3]};
                 var owner = e[4];
-                var age = frameTime - e[5];
+                var age = frameTime - e[e.length -1];
 
                 //this.render.lasers.beginFill('0xff0000');
                 //this.render.lasers.alpha = (1 - age/laserTimeout) * 0.9;

@@ -222,27 +222,46 @@ if (cluster.isMaster) {
 
             //Map
             this.mapConfig = {};
-            this.mapConfig.numBlocks = 30;//(150 MAX because of int 16 ArrayBuffer  150*blockSize 200 = 30,000 this leaves room for lasers to go into the black)
+            this.mapConfig.numBlocks = 80;//(150 MAX because of int 16 ArrayBuffer  150*blockSize 200 = 30,000 this leaves room for lasers to go into the black)
             this.mapConfig.width = this.mapConfig.numBlocks;//all maps will have the same width and height (square)
             this.mapConfig.height = this.mapConfig.numBlocks;//blocks
-            this.mapConfig.blank = 80;//percent of empty blocks
-            this.mapConfig.bonus = 1;//percent of bonus blocks
+            this.mapConfig.area = this.mapConfig.numBlocks * this.mapConfig.numBlocks;//blocks
             this.mapConfig.units = 200;//how many units wide and high is a block
             this.map = [];
-            for(var i=0; i<this.mapConfig.width; i++){
+            this.mapHealth = [];
+            for(let i=0; i<this.mapConfig.width; i++){
                 this.map[i] = [];
-                for(var k=0; k<this.mapConfig.height; k++) {
-                    var r = Math.random() * 100;
-                    if (r < this.mapConfig.blank){
-                        this.map[i][k] = 0;// blank
-                    } else if (r < this.mapConfig.blank + this.mapConfig.bonus)
-                        this.map[i][k] = 20 + Math.ceil(Math.random() * 4);// bonus
-                    else
-                        this.map[i][k] = Math.ceil(Math.random() * 6);// color square
+                this.mapHealth[i] = [];
+                for(let k=0; k<this.mapConfig.height; k++) {
+                    this.map[i][k] = 0;// blank
+                    this.mapHealth[i][k] = 0;
                 }
             }
+            var colorBlockOneOutOf = 50;
+            var bonusBlockOneOutOf = 2000;
+            var mapItems = [
+                {value: 1, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
+                {value: 2, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
+                {value: 3, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
+                {value: 4, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
+                {value: 5, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
+                {value: 6, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
 
-            // Tweakable
+                {value: 21, amount: Math.ceil(this.mapConfig.area / bonusBlockOneOutOf)},
+                {value: 22, amount: Math.ceil(this.mapConfig.area / bonusBlockOneOutOf)},
+                {value: 23, amount: Math.ceil(this.mapConfig.area / bonusBlockOneOutOf)},
+                {value: 24, amount: Math.ceil(this.mapConfig.area / bonusBlockOneOutOf)}
+            ];
+            mapItems.forEach((e,i)=>{
+                for(let w=0; w<e.amount; w++){
+                    var fillBlock = this.getMapEmpty();
+                    this.map[fillBlock.y][fillBlock.x] = e.value;
+                    this.mapHealth[fillBlock.y][fillBlock.x] = 100;
+
+                }
+            });
+
+            // TimingbonusBlockOneOutOf
             this.loopDelay = 1000/20;//20 ticks per second
             this.minimapDelay = this.loopDelay * 4;// every 4 ticks
 
@@ -534,7 +553,7 @@ if (cluster.isMaster) {
                                     this.players[key].y = (warpTo.y * blockUnite) + (blockUnite/2);
                                 }else if(bonusNumber == 23){//thruster
                                     this.players[key].bonus.thruster = Date.now();
-                                }else if(bonusNumber == 24){//warp
+                                }else if(bonusNumber == 24){//weapon
                                     this.players[key].bonus.weapon = Date.now();
                                 }
 
@@ -604,7 +623,6 @@ if (cluster.isMaster) {
                         // Laser collision with block
                         //check collision with block
                         //cut laser short on collision
-                        //random 1/10 move block
                         let blockSize = this.mapConfig.units;
                         let smallestBlockX = Math.floor((laser[0] < laser[2] ? laser[0] : laser[2]) / blockSize);// simplified to block level coordinates
                         let smallestBlockY = Math.floor((laser[1] < laser[3] ? laser[1] : laser[3]) / blockSize);
@@ -702,13 +720,17 @@ if (cluster.isMaster) {
 
                         // in response to collision
                         if(blockHit !== false){
-                            if(Math.random() > 0.95 || this.map[blockHit.y][blockHit.x] == this.players[key].color){// 1 out of 20 chance
-                                if(this.map[blockHit.y][blockHit.x] > 20 && this.map[blockHit.y][blockHit.x] < 30){//bonus
-                                    // bonus
-                                }else{// colored block
+                            if(this.map[blockHit.y][blockHit.x] > 20 && this.map[blockHit.y][blockHit.x] < 30){//bonus
+                                // bonus
+                            }else{// colored block
+                                this.mapHealth[blockHit.y][blockHit.x] -= 5;
+
+                                if(this.mapHealth[blockHit.y][blockHit.x] <= 0){
                                     var blockEmpty = this.getMapEmpty();
                                     this.map[blockEmpty.y][blockEmpty.x] = this.map[blockHit.y][blockHit.x];
+                                    this.mapHealth[blockEmpty.y][blockEmpty.x] = 100;
                                     this.map[blockHit.y][blockHit.x] = 0;
+                                    this.mapHealth[blockHit.y][blockHit.x] = 0;
                                     blocksChanged.push([blockEmpty.x, blockEmpty.y, this.map[blockEmpty.y][blockEmpty.x]]);
                                     blocksChanged.push([blockHit.x, blockHit.y, this.map[blockHit.y][blockHit.x]]);
                                 }
