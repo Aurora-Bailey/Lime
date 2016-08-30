@@ -64,8 +64,11 @@ $(window).on('keyup', function(e){
     }
     if(e.keyCode == 13 || e.keyCode == 9){
         if(PO.chatMode){
-            PO.tick.message = $('#actual-chat-box').val();
-            PO.tickchanged = true;
+            var msg = $('#actual-chat-box').val();
+            if(!Game.executeMessage(msg)){
+                PO.tick.message = msg;
+                PO.tickchanged = true;
+            }
             PO.chatMode = false;
             $('#enter-chat').addClass('hide');
             $('#actual-chat-box').blur().val('');

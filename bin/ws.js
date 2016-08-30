@@ -138,7 +138,7 @@ if (cluster.isMaster) {
                         weaponSpeed: 1000/2,
                         weaponLockout: Date.now(),
                         weaponDistance: 1500,
-                        weaponDamage: 30,
+                        weaponDamage: 10,
                         bonus: {thruster: false, weapon: false},
                         bonusTimeout: 5000, //miliseconds
                         lastActive: Date.now(),

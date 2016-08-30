@@ -260,7 +260,7 @@ class GameClass{
         // Core
         this.center = {x: $(window).width() / 2, y: $(window).height() / 2};
         this.view = {x: 2000, y: 1000};// will be overwritten by game.zoom
-        this.zoomLevel = 4;
+        this.zoomLevel = 3;
         this.renderer = PIXI.autoDetectRenderer(this.view.x, this.view.y,{backgroundColor : 0x000000});
         this.renderer.baseResolution = {width: this.renderer.width, height: this.renderer.height};
         $('#maingame').append(this.renderer.view);
@@ -273,6 +273,10 @@ class GameClass{
         // Data
         this.data = {};
         this.data.config = {};
+        this.data.config.health = {};
+        this.data.config.health.style = 'circle';
+        this.data.config.health.alpha = 0.5;
+        this.data.config.health.color = 'player';
         this.data.map = [];
         this.data.players = {tick: [], list: [], minimap: []};
         this.data.oldPlayers = {tick: [], list: [], minimap: []};// one tick behind for smoothing the frames
@@ -460,17 +464,69 @@ class GameClass{
                 this.render.names[i].position.x = offset.x;
                 this.render.names[i].position.y = offset.y - 100;
 
-                // Health bar
-                var healthWidthMult = 2;// streach health bar
-                this.render.players.beginFill('0xff0000');
-                this.render.players.lineStyle(3, 0x000000, 1);
-                this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, 100 * healthWidthMult, 10);
-                this.render.players.endFill();
 
-                this.render.players.beginFill('0x00ff00');
-                this.render.players.lineStyle(3, 0x000000, 1);
-                this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, e[4] * healthWidthMult, 10);
-                this.render.players.endFill();
+                // Color scheme
+                var healthColor = {};
+                if(this.data.config.health.color == 'default'){
+                    healthColor.full = '0x00ff00';
+                    healthColor.empty = '0xff0000';
+                    healthColor.outline = '0x000000';
+                }else if(this.data.config.health.color == 'class'){
+                    console.log(player.type);
+                    if(player.type == 0){
+                        healthColor.full = '0xff0000';
+                        healthColor.empty = '0x333333';
+                        healthColor.outline = '0x000000';
+                    }else if(player.type == 1){
+                        healthColor.full = '0x00ff00';
+                        healthColor.empty = '0x333333';
+                        healthColor.outline = '0x000000';
+                    }else{
+                        healthColor.full = '0x0000ff';
+                        healthColor.empty = '0x333333';
+                        healthColor.outline = '0x000000';
+                    }
+
+                }else{// player
+                    healthColor.full = this.color.numToColor(player.color);
+                    healthColor.empty = '0x333333';
+                    healthColor.outline = '0x000000';
+                }
+
+
+                // Draw Bar
+                if(this.data.config.health.style == 'bar'){
+                    // Health bar
+                    var healthWidthMult = 2;// streach health bar
+                    this.render.players.beginFill(healthColor.empty, this.data.config.health.alpha);
+                    this.render.players.lineStyle(3, healthColor.outline, this.data.config.health.alpha);
+                    this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, 100 * healthWidthMult, 12);
+                    this.render.players.endFill();
+
+                    this.render.players.beginFill(healthColor.full, this.data.config.health.alpha);
+                    this.render.players.lineStyle(3, healthColor.outline, this.data.config.health.alpha);
+                    this.render.players.drawRect(offset.x - 50 * healthWidthMult, offset.y - 80, e[4] * healthWidthMult, 12);
+                    this.render.players.endFill();
+                } else {// Draw Circle
+                    // black border
+                    this.render.players.lineStyle(12, healthColor.outline, this.data.config.health.alpha);
+                    this.render.players.drawCircle(offset.x, offset.y, 80);
+
+                    // Green
+                    this.render.players.lineStyle(10, healthColor.full, this.data.config.health.alpha);
+                    this.render.players.moveTo(offset.x + 80, offset.y);
+                    this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (e[4]/100), false);
+
+                    // Red
+                    this.render.players.lineStyle(10, healthColor.empty, this.data.config.health.alpha);
+                    this.render.players.moveTo(offset.x + 80, offset.y);
+                    this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (e[4]/100), true);
+                }
+
+
+
+
+
 
                 // Player ship
                 this.render.players.beginFill(this.color.numToColor(player.color));
@@ -666,6 +722,45 @@ class GameClass{
         $(window).trigger('resize');
     }
 
+    executeMessage(msg){
+        var parts = msg.split(' ');
+        if(parts.length == 0) return false;
+
+        if(parts[0] == '//'){
+            if(parts[1] == 'health'){
+                if(parts[2] == 'style'){
+                    if(parts[3] == 'bar')
+                        this.data.config.health.style = 'bar';
+                    else
+                        this.data.config.health.style = 'circle';
+
+                }else if(parts[2] == 'alpha'){
+                    let num = parseFloat(parts[3]);
+                    if(!isNaN(num))
+                        this.data.config.health.alpha = num;
+
+                }else if(parts[2] == 'color'){
+                    if(parts[3] == 'default')
+                        this.data.config.health.color = 'default';
+                    else if(parts[3] == 'class')
+                        this.data.config.health.color = 'class';
+                    else
+                        this.data.config.health.color = 'player';
+
+                }
+            }else if(parts[1] == 'zoom'){
+                let num = parseInt(parts[2]);
+                if(!isNaN(num))
+                    this.zoom(num);
+
+            }
+
+            return true;
+        }
+
+
+        return false;
+    }
 
     animate(){
         requestAnimationFrame(()=>{this.animate()});
