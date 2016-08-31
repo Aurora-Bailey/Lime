@@ -124,6 +124,7 @@ if (cluster.isMaster) {
                         score: 10,
                         color: Math.ceil(Math.random() * 6),
                         level: 0,
+                        levelBonus: 1,
                         health: 1000,
                         maxHealth: 1000,
                         defense: 1, // 0=no damage, 1=all damage
@@ -458,6 +459,7 @@ if (cluster.isMaster) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
                 this.players[key].level = Math.floor((this.numPlayers + 1 - this.players[key].rank) * step);
+                this.players[key].levelBonus = 1 + 2 * (this.players[key].level / levelMax);
                 idLevelScoreSend.push([this.players[key].id, this.players[key].rank, this.players[key].level]);
             }
             return idLevelScoreSend;
@@ -684,7 +686,7 @@ if (cluster.isMaster) {
                             else
                                 bonusSpeed = 2;
                         }
-                        this.players[key].weaponLockout = tickDate + Math.floor(this.players[key].weaponSpeed / bonusSpeed);
+                        this.players[key].weaponLockout = tickDate + Math.floor((this.players[key].weaponSpeed / bonusSpeed) / this.players[key].levelBonus);
 
                         var laser = [];
                         laser[0] = this.players[key].x + Math.cos(this.players[key].direction / 1000) * this.players[key].collisionPadding;
@@ -815,11 +817,11 @@ if (cluster.isMaster) {
 
                         if(playerHit !== false){
                             if(this.players['p' + playerHit].color == this.players[key].color){// heal
-                                this.players['p' + playerHit].health = Math.floor(this.players['p' + playerHit].health + this.players[key].weaponHeal);
+                                this.players['p' + playerHit].health = Math.floor(this.players['p' + playerHit].health + (this.players[key].weaponHeal / this.players['p' + playerHit].levelBonus));
                                 if(this.players['p' + playerHit].health > this.players['p' + playerHit].maxHealth)
                                     this.players['p' + playerHit].health = this.players['p' + playerHit].maxHealth;
                             }else{// damage
-                                this.players['p' + playerHit].health = Math.floor(this.players['p' + playerHit].health - (this.players[key].weaponDamage * this.players['p' + playerHit].defense));
+                                this.players['p' + playerHit].health = Math.floor(this.players['p' + playerHit].health - ((this.players[key].weaponDamage / this.players['p' + playerHit].levelBonus) * this.players['p' + playerHit].defense));
 
 
                                 if(this.players['p' + playerHit].health <= 0){// death
