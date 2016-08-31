@@ -27,7 +27,6 @@ class WebSocketClass {
             PO.ready = false;
             $('#homepage').removeClass('hide');
             $('#maingame').addClass('hide');
-            $('#chat-log').addClass('hide');
         };
         this.server.onmessage = (e) => {
             var d = e.data;
@@ -50,7 +49,7 @@ class WebSocketClass {
                     PO.ready = true;
                     $('#homepage').addClass('hide');
                     $('#maingame').removeClass('hide');
-                    $('#chat-log').removeClass('hide').html('');
+                    $('#chat-log').html('');
                     Game.chatMessage("Press [Enter] to open/close chat.", 'game');
                     Game.chatMessage("You can only chat with " + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color) + " players.", 'game');
                     var playerId = d.id;
@@ -79,12 +78,24 @@ class WebSocketClass {
             }else{
                 var x = new Int8Array(d);
 
-                if(x[0] == 5){
-                    var asdf = WS.unpackBinary(d, 16);
-                    console.log(asdf);
+                if(x[0] == 5){// rank change
+                    Game.data.oldPlayers.rank = Game.data.players.rank;
+                    Game.data.players.rank = WS.unpackBinary(d, 16);
+
+                    Game.data.players.rank.forEach((e,i)=>{
+                        var id = e[0];
+                        Game.data.players.list['p' + id].rank = e[1];
+                        Game.data.players.list['p' + id].level = e[2];
+
+                        // calculate what color the level is
+                        var flipLevelColor = 2 - parseFloat(e[2])/1200;
+                        var modLevelColor = (flipLevelColor + 0.85) % 1;
+                        Game.data.players.list['p' + id].levelColor = Game.color.hslToHex(modLevelColor, 1, 0.5);
+                    });
+                    // id rank level
                 }
 
-                if(x[0] == 6){
+                if(x[0] == 6){// minimap change
                     Game.data.oldPlayers.minimap = Game.data.players.minimap;
                     Game.data.players.minimap = WS.unpackBinary(d, 16);
                 }
@@ -266,10 +277,10 @@ class GameClass{
         this.data.config.health.color = 'player';
         this.data.config.background = {};
         this.data.config.background.style = 'grid';
-        this.data.config.background.color = 'dark';
+        this.data.config.background.color = 'light';
         this.data.map = [];
-        this.data.players = {tick: [], list: [], minimap: []};
-        this.data.oldPlayers = {tick: [], list: [], minimap: []};// one tick behind for smoothing the frames
+        this.data.players = {tick: [], list: [], minimap: [], rank: []};
+        this.data.oldPlayers = {tick: [], list: [], minimap: [], rank: []};// one tick behind for smoothing the frames
         this.data.lasers = [];
         this.data.myId = 0;
         this.data.serverTick = 1000;// miliseconds per server tick, replaced by actual server tick rate
@@ -454,9 +465,14 @@ class GameClass{
             var shipX = {point: (ship.height / 3) * 2, left: -(ship.height / 3), right: -(ship.height / 3)};
             var shipY = {point: 0, left: -(ship.width / 2), right: (ship.width / 2)};
 
+            var icons = {};
+            icons.shield = $('<div />').html('&#xf132;').text();
+            icons.plus = $('<div />').html('&#xf067;').text();
+            icons.power = $('<div />').html('&#xf0e7;').text();
+
             this.render.players.clear();
             this.render.names.forEach((e,i)=>{
-                this.render.names[i].text = '';
+                this.render.names[i].position.x = -10000;
             });
 
             this.data.players.tick.forEach((e,i)=>{
@@ -465,6 +481,8 @@ class GameClass{
                 var offset = {x: e[1], y: e[2], r: e[3]/1000};
                 var id = e[0];
                 var player = this.data.players.list['p' + id];
+                var levelColor = 0x000000;
+                if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
                 var healthPercent = Math.floor(e[4]/10);// from 1000 to 100 for drawing
                 var drawDate = Date.now();
                 //id x y rotation health level
@@ -481,16 +499,27 @@ class GameClass{
                 });
 
                 // Add more text objets if needed
-                if(typeof this.render.names[i] == 'undefined'){
-                    this.render.names[i] = new PIXI.Text('', {font: 'bold 30px Arial', fill: 'white', align: 'center', stroke: '#000000', strokeThickness: 6 });
-                    this.render.names[i].anchor.set(0.5);
-                    this.render.text.addChild(this.render.names[i]);
+                if(typeof this.render.names[id] == 'undefined'){
+                    this.render.names[id] = new PIXI.Text('', {font: 'bold 30px Arial', fill: 'white', align: 'center', stroke: '#000000', strokeThickness: 6 });
+                    this.render.names[id].text = player.name;
+                    this.render.names[id].anchor.set(0.5);
+                    this.render.text.addChild(this.render.names[id]);
+
+                    this.render.names[10000 + id] = new PIXI.Text('', {font: '35px fontAwesome', fill: 'white', align: 'center', stroke: '#000000', strokeThickness: 6 });
+                    if(player.type == 0)this.render.names[10000 + id].text = icons.power;
+                    if(player.type == 1)this.render.names[10000 + id].text = icons.plus;
+                    if(player.type == 2)this.render.names[10000 + id].text = icons.shield;
+                    this.render.names[10000 + id].anchor.set(0.5);
+                    this.render.text.addChild(this.render.names[10000 + id]);
                 }
 
                 // Name
-                this.render.names[i].text = player.name;
-                this.render.names[i].position.x = offset.x;
-                this.render.names[i].position.y = offset.y - 100;
+                this.render.names[id].position.x = offset.x;
+                this.render.names[id].position.y = offset.y - 100;
+
+                this.render.names[10000 + id].style = {font: '35px fontAwesome', fill: levelColor.replace('0x', '#'), align: 'center', stroke: '#000000', strokeThickness: 6 }
+                this.render.names[10000 + id].position.x = offset.x;
+                this.render.names[10000 + id].position.y = offset.y - 130;
 
 
                 // Color scheme
@@ -537,16 +566,16 @@ class GameClass{
                     this.render.players.endFill();
                 } else {// Draw Circle
                     // black border
-                    this.render.players.lineStyle(12, healthColor.outline, this.data.config.health.alpha);
+                    this.render.players.lineStyle(14, healthColor.outline, this.data.config.health.alpha);
                     this.render.players.drawCircle(offset.x, offset.y, 80);
 
                     // Green
-                    this.render.players.lineStyle(10, healthColor.full, this.data.config.health.alpha);
+                    this.render.players.lineStyle(12, healthColor.full, this.data.config.health.alpha);
                     this.render.players.moveTo(offset.x + 80, offset.y);
                     this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (healthPercent/100), false);
 
                     // Red
-                    this.render.players.lineStyle(10, healthColor.empty, this.data.config.health.alpha);
+                    this.render.players.lineStyle(12, healthColor.empty, this.data.config.health.alpha);
                     this.render.players.moveTo(offset.x + 80, offset.y);
                     this.render.players.arc(offset.x, offset.y, 80, 0, (Math.PI * 2) * (healthPercent/100), true);
                 }
@@ -554,11 +583,9 @@ class GameClass{
 
 
 
-
-
                 // Player ship
-                this.render.players.beginFill(this.color.numToColor(player.color));
-                this.render.players.lineStyle(6, 0xffffff, 1);
+                this.render.players.beginFill(this.color.numToColor(player.color));//levelColor);
+                this.render.players.lineStyle(6, '0xFFFFFF', 0.5);
                 this.render.players.moveTo(offset.x + (shipX.point * Math.cos(offset.r) - shipY.point * Math.sin(offset.r)), offset.y  + (shipX.point * Math.sin(offset.r) + shipY.point * Math.cos(offset.r)));
                 this.render.players.lineTo(offset.x + (shipX.left * Math.cos(offset.r) - shipY.left * Math.sin(offset.r)), offset.y  + (shipX.left * Math.sin(offset.r) + shipY.left * Math.cos(offset.r)));
                 this.render.players.lineTo(offset.x + (shipX.right * Math.cos(offset.r) - shipY.right * Math.sin(offset.r)), offset.y  + (shipX.right * Math.sin(offset.r) + shipY.right * Math.cos(offset.r)));
@@ -640,11 +667,14 @@ class GameClass{
             this.data.lasers.forEach((e,i)=>{
                 var offset = {x1: e[0], y1: e[1], x2: e[2], y2: e[3]};
                 var owner = e[4];
+                var player = this.data.players.list['p' + owner];
                 var age = frameTime - e[e.length -1];
+                var levelColor = 0x000000;
+                if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
 
                 //this.render.lasers.beginFill('0xff0000');
                 //this.render.lasers.alpha = (1 - age/laserTimeout) * 0.9;
-                this.render.lasers.lineStyle((1 - age/laserTimeout) * 10, 0xffffff, 1);
+                this.render.lasers.lineStyle((1 - age/laserTimeout) * 12, levelColor, 1);
                 this.render.lasers.moveTo(offset.x1 , offset.y1);
                 this.render.lasers.lineTo(offset.x2, offset.y2);
                 //this.render.lasers.lineTo(offset.x1, offset.y1);
@@ -661,6 +691,32 @@ class GameClass{
         };
         this.color.rgbToHex = (r, g, b)=>{
             return "0x" + this.color.componentToHex(r) + this.color.componentToHex(g) + this.color.componentToHex(b);
+        };
+        this.color.hslToRgb = (h,s,l)=>{//h0-1 s0-1 l(black range)0-0.5 l(white range)0.5-1
+            var r, g, b;
+            if(s == 0){
+                r = g = b = l; // achromatic
+            }else{
+                var hue2rgb = function hue2rgb(p, q, t){
+                    if(t < 0) t += 1;
+                    if(t > 1) t -= 1;
+                    if(t < 1/6) return p + (q - p) * 6 * t;
+                    if(t < 1/2) return q;
+                    if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+
+                var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                var p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255)};
+        };
+        this.color.hslToHex = (h,s,l)=>{
+            var x = this.color.hslToRgb(h, s, l);
+            return this.color.rgbToHex(x.r, x.g, x.b);
         };
         this.color.numToColor = (num)=>{
             var colors = ['0xffffff','0x800080','0x0000ff','0x00ff00','0xffff00','0xeb9447','0xff0000'];

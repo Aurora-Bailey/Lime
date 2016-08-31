@@ -241,7 +241,7 @@ if (cluster.isMaster) {
             this.ready = false;
             // Game data
             this.genRankList = false;
-            this.maxPlayers = 60;
+            this.maxPlayers = 10;
             this.numPlayers = 0;
             this.players = {};
 
@@ -329,7 +329,8 @@ if (cluster.isMaster) {
                     name: this.players[key].name,
                     type: this.players[key].type,
                     color: this.players[key].color,
-                    rank: this.players[key].rank
+                    rank: this.players[key].rank,
+                    level: this.players[key].level
                 };
             }
             return x;
@@ -340,7 +341,8 @@ if (cluster.isMaster) {
                 name: this.players['p' + id].name,
                 type: this.players['p' + id].type,
                 color: this.players['p' + id].color,
-                rank: this.players['p' + id].rank
+                rank: this.players['p' + id].rank,
+                level: this.players['p' + id].level
             };
         }
 
@@ -414,7 +416,7 @@ if (cluster.isMaster) {
                 return 'tps: ' + this.serverLoad.tps + ' Average: ' + this.serverLoad.current + '% High: ' + this.serverLoad.high + '% Low: ' + this.serverLoad.low + '% (percent of one core used per tick)';
         }
 
-        static killPrize(x, y, distance, color, score){
+        static killPrize(x, y, distance, color, score){ // currently weapon distance/2
             for(let key in this.players){
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
@@ -824,7 +826,7 @@ if (cluster.isMaster) {
 
                                     // killer prize
                                     this.players[key].health = this.players[key].maxHealth;
-                                    this.killPrize(this.players[key].x, this.players[key].y, this.players[key].weaponDistance, this.players[key].color, this.players['p' + playerHit].score / 2);
+                                    this.killPrize(this.players[key].x, this.players[key].y, this.players[key].weaponDistance / 2, this.players[key].color, this.players['p' + playerHit].score / 2);
                                     if(this.players[key].connected)
                                         this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
 

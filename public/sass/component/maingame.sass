@@ -10,14 +10,20 @@
   background-color: black
   z-index: 1000
 
-  #minimap
-    height: 25vh
-    width: 25vh
-    position: absolute
-    right: 0
-    bottom: 0
-    opacity: 0.8
-    z-index: 1010
+
+#minimap
+  height: 25vh
+  width: 25vh
+  position: absolute
+  right: 0
+  bottom: 0
+  opacity: 0.7
+  z-index: 1010
+  -webkit-transition: opacity 0.5s, -webkit-transform 0.5s
+  transition: opacity 0.5s, transform 0.5s
+
+  &:hover
+    opacity: 0.9
 
 #enter-chat
   position: absolute
@@ -33,7 +39,7 @@
     position: absolute
     left: 0
     right: 0
-    bottom: 15vh
+    bottom: 3vh
     margin: auto
     width: 60vh
     height: 6vh
@@ -59,26 +65,39 @@
     &:focus
       outline: none
 
-#chat-log
+#chat-log, #ranks
   position: absolute
-  left: 0
-  bottom: 0
-  z-index: 1005
-  width: 35vh
-  height: 25vh
+  z-index: 1006
+  height: 10vh
   margin: auto
-  background-color: rgba(0,0,0, 0.7)
+  background-color: rgba(0,0,0, 0.6)
   overflow: hidden
-  pointer-events: none
   font-size: 1.9vh
-  padding: 0.5vh 0 0 0
+  -webkit-transition: height 0.5s, background-color 0.5s, -webkit-transform 0.5s
+  transition: height 0.5s, background-color 0.5s, transform 0.5s
+
+  &:hover
+    background-color: rgba(0,0,0, 0.8)
 
   div
     padding: 0.1vh 0.5vh
+    pointer-events: none
+    -webkit-user-select: none /* Chrome all / Safari all */
+    -moz-user-select: none    /* Firefox all */
+    -ms-user-select: none     /* IE 10+ */
+    user-select: none         /* Likely future */
+
+#chat-log
+  left: 0
+  bottom: 0
+  width: 35vh
+  padding: 0.5vh 0 0 0
+
+  &:hover
+    height: 40vh
 
   .game
     color: #CCC
-
   .red
     color: #ff8080
   .orange
@@ -93,3 +112,14 @@
     color: #cc99ff
   .white
     color: white
+
+#ranks
+  top: 0
+  right: 0
+  width: 25vh
+
+  &:hover
+    height: 45vh
+
+  div
+    height: 3vh
