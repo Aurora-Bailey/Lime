@@ -82,6 +82,15 @@ class WebSocketClass {
                     Game.data.oldPlayers.rank = Game.data.players.rank;
                     Game.data.players.rank = WS.unpackBinary(d, 16);
 
+                    Game.data.players.rank.sort(function(a, b){
+                        if(a[1] < b[1])
+                            return 1;
+                        if (a[1] > b[1])
+                            return -1;
+                        return 0;// a must be equal to b
+                    });
+
+                    $('#ranks').html('');
                     Game.data.players.rank.forEach((e,i)=>{
                         var id = e[0];
                         Game.data.players.list['p' + id].rank = e[1];
@@ -91,6 +100,22 @@ class WebSocketClass {
                         var flipLevelColor = 2 - parseFloat(e[2])/1200;
                         var modLevelColor = (flipLevelColor + 0.85) % 1;
                         Game.data.players.list['p' + id].levelColor = Game.color.hslToHex(modLevelColor, 1, 0.5);
+
+
+                        // add to rank board
+                        $('#ranks').prepend(
+                            $('<div />')
+                                .addClass(Lib.numToColorNameProper(Game.data.players.list['p' + id].color).toLowerCase())
+                                .append(
+                                    $('<span />')
+                                        .text('' + e[1] + ' - ')
+                                )
+                                .append(
+                                    $('<span />')
+                                        .text(Game.data.players.list['p' + id].name)
+                                )
+
+                        );
                     });
                     // id rank level
                 }
@@ -259,12 +284,12 @@ class GameClass{
         this.center = {x: $(window).width() / 2, y: $(window).height() / 2};
         this.view = {x: 2000, y: 1000};// will be overwritten by game.zoom
         this.zoomLevel = 3;
-        this.renderer = PIXI.autoDetectRenderer(this.view.x, this.view.y,{backgroundColor : 0x000000});
+        this.renderer = PIXI.autoDetectRenderer(this.view.x, this.view.y,{backgroundColor : '0x000000'});
         this.renderer.baseResolution = {width: this.renderer.width, height: this.renderer.height};
         $('#maingame').append(this.renderer.view);
 
         // Mini Map
-        this.rendererMinimap = PIXI.autoDetectRenderer(400, 400,{backgroundColor : 0x000000});
+        this.rendererMinimap = PIXI.autoDetectRenderer(400, 400,{backgroundColor : '0x000000'});
         this.rendererMinimap.baseResolution = {width: this.rendererMinimap.width, height: this.rendererMinimap.height};
         $('#minimap').append(this.rendererMinimap.view);
 
@@ -335,14 +360,14 @@ class GameClass{
             var mapColor = {};
             if(this.data.config.background.color == 'light'){
                 this.render.background.texture = this.render.backgroundImageLight;
-                this.renderer.backgroundColor = 0xffffff;
+                this.renderer.backgroundColor = '0xffffff';
                 mapColor.outline = '0x999999';
                 mapColor.mainGridLine = '0xCCCCCC';
                 mapColor.sideGridLine = '0xDDDDDD';
                 mapColor.colorGrid = '0xEEEEEE';
             }else{
                 this.render.background.texture = this.render.backgroundImageDark;
-                this.renderer.backgroundColor = 0x000000;
+                this.renderer.backgroundColor = '0x000000';
                 mapColor.outline = '0xffffff';
                 mapColor.mainGridLine = '0x333333';
                 mapColor.sideGridLine = '0x222222';
@@ -353,7 +378,7 @@ class GameClass{
 
             if(this.data.config.background.style == 'grid'){
                 this.render.map.beginFill(mapColor.colorGrid);
-                this.render.map.lineStyle(0, 0xffffff, 1);
+                this.render.map.lineStyle(0, '0xffffff', 1);
                 this.render.map.drawRect(0,0, mapPixels, mapPixels);
                 this.render.map.endFill();
 
@@ -391,7 +416,7 @@ class GameClass{
                     if(e != 0){
                         var offset = {x: i * blocksize, y: index * blocksize};
                         var border = 6;
-                        this.render.map.lineStyle(0, 0xffffff, 1);
+                        this.render.map.lineStyle(0, '0xffffff', 1);
 
                         this.render.map.beginFill(mapColor.outline);
                         this.render.map.drawRect(offset.x, offset.y, blocksize, blocksize);
@@ -403,7 +428,7 @@ class GameClass{
 
 
                         // Draw stuff on bonus blocks
-                        this.render.map.lineStyle(20, 0x999999, 1);
+                        this.render.map.lineStyle(20, '0x999999', 1);
                         if(e==21){// health
 
                             this.render.map.moveTo(offset.x + blocksize/2, offset.y + blocksize*0.25);
@@ -443,7 +468,7 @@ class GameClass{
 
                         this.render.minimap.beginFill('0x337733');
                         this.render.minimap.alpha = 1;
-                        this.render.minimap.lineStyle(0, 0xffffff, 1);
+                        this.render.minimap.lineStyle(0, '0xffffff', 1);
                         this.render.minimap.drawRect(offset.x, offset.y, blocksize, blocksize);
                         this.render.minimap.endFill();
                     }else if(e != 0){
@@ -451,7 +476,7 @@ class GameClass{
 
                         this.render.minimap.beginFill('0x333333');
                         this.render.minimap.alpha = 1;
-                        this.render.minimap.lineStyle(0, 0xffffff, 1);
+                        this.render.minimap.lineStyle(0, '0xffffff', 1);
                         this.render.minimap.drawRect(offset.x, offset.y, blocksize, blocksize);
                         this.render.minimap.endFill();
                     }
@@ -481,7 +506,7 @@ class GameClass{
                 var offset = {x: e[1], y: e[2], r: e[3]/1000};
                 var id = e[0];
                 var player = this.data.players.list['p' + id];
-                var levelColor = 0x000000;
+                var levelColor = '0x000000';
                 if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
                 var healthPercent = Math.floor(e[4]/10);// from 1000 to 100 for drawing
                 var drawDate = Date.now();
@@ -518,8 +543,8 @@ class GameClass{
                 this.render.names[id].position.y = offset.y - 100;
 
                 this.render.names[10000 + id].style = {font: '35px fontAwesome', fill: levelColor.replace('0x', '#'), align: 'center', stroke: '#000000', strokeThickness: 6 }
-                this.render.names[10000 + id].position.x = offset.x;
-                this.render.names[10000 + id].position.y = offset.y - 130;
+                this.render.names[10000 + id].position.x = offset.x + 85;
+                this.render.names[10000 + id].position.y = offset.y;
 
 
                 // Color scheme
@@ -628,7 +653,7 @@ class GameClass{
                 if(e[2] == this.data.myId){
                     // Draw your player
                     this.render.miniplayers.beginFill(this.color.numToColor(player.color));
-                    this.render.miniplayers.lineStyle(4, 0xffffff, 1);
+                    this.render.miniplayers.lineStyle(4, '0xffffff', 1);
                     this.render.miniplayers.moveTo(offset.x, offset.y - 13.2);
                     this.render.miniplayers.lineTo(offset.x + 10, offset.y + 6.6);
                     this.render.miniplayers.lineTo(offset.x - 10, offset.y + 6.6);
@@ -637,7 +662,7 @@ class GameClass{
                 }else{
                     // Other players
                     this.render.miniplayers.beginFill(this.color.numToColor(player.color));
-                    this.render.miniplayers.lineStyle(4, 0xffffff, 1);
+                    this.render.miniplayers.lineStyle(4, '0xffffff', 1);
                     this.render.miniplayers.drawCircle(offset.x, offset.y, 10);
                     this.render.miniplayers.endFill();
                 }
@@ -669,7 +694,7 @@ class GameClass{
                 var owner = e[4];
                 var player = this.data.players.list['p' + owner];
                 var age = frameTime - e[e.length -1];
-                var levelColor = 0x000000;
+                var levelColor = '0x000000';
                 if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
 
                 //this.render.lasers.beginFill('0xff0000');

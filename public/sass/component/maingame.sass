@@ -80,21 +80,11 @@
     background-color: rgba(0,0,0, 0.8)
 
   div
-    padding: 0.1vh 0.5vh
     pointer-events: none
     -webkit-user-select: none /* Chrome all / Safari all */
     -moz-user-select: none    /* Firefox all */
     -ms-user-select: none     /* IE 10+ */
     user-select: none         /* Likely future */
-
-#chat-log
-  left: 0
-  bottom: 0
-  width: 35vh
-  padding: 0.5vh 0 0 0
-
-  &:hover
-    height: 40vh
 
   .game
     color: #CCC
@@ -113,13 +103,26 @@
   .white
     color: white
 
+#chat-log
+  left: 0
+  bottom: 0
+  width: 35vh
+  padding: 0.5vh 0 0 0
+
+  &:hover
+    height: 40vh
+
+  div
+    padding: 0.1vh 0.5vh
+
 #ranks
   top: 0
   right: 0
-  width: 25vh
-
-  &:hover
-    height: 45vh
+  width: 20vh
+  height: 30vh
+  padding: 0.25vh 0
 
   div
     height: 3vh
+    line-height: 3vh
+    text-align: center
