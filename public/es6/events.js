@@ -21,6 +21,12 @@ $('#respawn-leave').on('click', function(){
 });
 
 
+$('#waiting-cancel').on('click', function(){
+    if(WS.connected){
+        WS.server.close();
+    }
+});
+
 $(window).on('mousedown', function(e){
     if(!PO.ready)return true;
     if(e.button == 0){

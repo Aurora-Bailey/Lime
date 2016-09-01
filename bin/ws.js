@@ -39,6 +39,9 @@ if (cluster.isMaster) {
 
     wss.on('connection', function connection(ws) {
         ws.connected = true;
+        ws.playing = false;
+        ws.waiting = false;
+        ws.stage = 0;
         ws.sendObj = function (obj) {
             try{
                 ws.send(JSON.stringify(obj));
@@ -57,7 +60,7 @@ if (cluster.isMaster) {
             try{
                 var d = JSON.parse(data);
 
-                if(typeof d[0] !== 'undefined'){
+                if(typeof d[0] !== 'undefined'  && ws.stage == 2){
                     if(d[0] == 2 && typeof ws.playerId != 'undefined'){// player input
 
                         var plId = 'p' + ws.playerId;
@@ -106,9 +109,21 @@ if (cluster.isMaster) {
 
                     }
 
-                }else if(d.m == "start"){
+                }else if(d.m == "start" && ws.playing == true && ws.stage == 1){
 
-                    console.log(Game.colorAvailable(1));
+                    // Make sure the spot is still available
+                    var colAvail = true;
+                    if(ws.wantcolor != 0)
+                        colAvail = Game.colorAvailable(ws.wantcolor);
+                    if(colAvail == false || Game.numPlayers >= Game.maxPlayers){
+                        // Move player back to waiting queue
+                        // someone else must have joined quicker
+                        ws.playing = false;
+                        ws.waiting = true;
+                        Game.waitingList.push(ws);
+                        ws.sendObj({m: 'wait'});
+                        return false;
+                    }
 
                     var emptySpot = Game.getMapEmpty();
                     var tryId = Lib.randString(4, false, false, true);
@@ -170,17 +185,42 @@ if (cluster.isMaster) {
                     // Generate new rank list
                     Game.genRankList = true;
 
+                    ws.stage = 2;
+
                     ws.sendObj({m:'go', id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map, tick: Game.loopDelay, minitick: Game.minimapDelay});
                     wss.broadcast(JSON.stringify({m: 'newplayer', v: Game.getSinglePlayer(tryId)}));
 
-                }else if(d.m == 'compatible'){
+                }else if(d.m == 'compatible' && ws.playing == false && ws.waiting == false && ws.stage == 0){
+
+                    // player wants to pick their color
+                    ws.wantcolor = 0;
+                    var colorAvailable = true;
+                    if(typeof d.wantcolor != 'undefined' && isNaN(d.wantcolor) == false){
+                        ws.wantcolor = parseInt(d.wantcolor);
+                        if(ws.wantcolor < 0 || ws.wantcolor > Game.numColors){
+                            ws.wantcolor = 0;// default to random
+                        }else{
+                            colorAvailable = Game.colorAvailable(ws.wantcolor);
+                        }
+                    }
+
+                    // send player ready, wait, or compatible
                     if(compatible == d.v){
-                        ws.sendObj({m: 'ready'});
+                        if(Game.numPlayers < Game.maxPlayers && colorAvailable){
+                            ws.playing = true;
+                            ws.waiting = false;
+                            ws.sendObj({m: 'ready'});
+                        }else{
+                            ws.waiting = true;
+                            Game.waitingList.push(ws);
+                            ws.sendObj({m: 'wait'});
+                        }
+                        ws.stage = 1;
                     }else{
                         ws.sendObj({m: 'compatible', v: false});
                     }
 
-                }else if(d.m == 'respawn'){
+                }else if(d.m == 'respawn' && ws.stage == 2){
                     if(typeof ws.playerId !== 'undefined' && typeof Game.players['p' + ws.playerId] !== 'undefined' && Game.players['p' + ws.playerId].health == 0){
 
                         // Respawn
@@ -191,7 +231,7 @@ if (cluster.isMaster) {
                         Game.players['p' + ws.playerId].velocity.x = 0;
                         Game.players['p' + ws.playerId].velocity.y = 0;
                     }
-                }else if(d.m == 'ping'){
+                }else if(d.m == 'ping' && ws.stage == 2){
                     ws.sendObj(d);
                 }
             }
@@ -214,15 +254,15 @@ if (cluster.isMaster) {
     });
 
     wss.broadcast = function broadcast(data) {
-        wss.clients.forEach(function each(client) {
+        for(let key in Game.players){
+            if (!Game.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
             try{
-                if(client.connected)
-                    client.send(data);
+                if(Game.players[key].ws.connected)
+                    Game.players[key].ws.send(data);
             }catch(err){
                 console.log(err);
             }
-
-        });
+        }
     };
 
     server.on('request', app);
@@ -249,6 +289,7 @@ if (cluster.isMaster) {
             this.numPlayers = 0;
             this.numColors = 6;
             this.players = {};
+            this.waitingList = [];
 
             //Map
             this.mapConfig = {};
@@ -362,8 +403,32 @@ if (cluster.isMaster) {
             // delete player from server
             delete this.players['p' + id];
             this.numPlayers--;
+            this.genRankList = true;
             // delete player from client
             wss.broadcast(JSON.stringify({m: 'dcplayer', v: id}));
+
+            // Allow waiting player to join
+            for(let i=0; i<this.waitingList.length; i++){
+                // remove dc players
+                if(this.waitingList[i].connected == false){
+                    this.waitingList.splice(i,1);
+                    i--;
+                    continue;
+                }
+
+                //check if player is eligible
+                var colAvail = true;
+                if(this.waitingList[i].wantcolor != 0)
+                    colAvail = this.colorAvailable(this.waitingList[i].wantcolor);
+
+                if(colAvail && this.numPlayers < this.maxPlayers){
+                    this.waitingList[i].playing = true;
+                    this.waitingList[i].waiting = false;
+                    this.waitingList[i].sendObj({m: 'ready'});
+                    this.waitingList.splice(i,1);
+                    break;
+                }
+            }
         }
 
         static getPlayers(){// name type etc..

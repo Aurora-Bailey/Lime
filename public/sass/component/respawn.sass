@@ -41,3 +41,43 @@
     background-color: white
     line-height: 39vh
     color: grey
+
+#waiting
+  position: absolute
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  background-color: darken($background, 5%)
+  z-index: 10000
+  font-size: 4.5vh
+  line-height: 8vh
+  text-align: center
+
+  #waiting-cancel
+    background-color: $primary
+    border: 0.5vh solid $primary-contrast
+    color: $primary-contrast
+    width: 39vh
+    height: 8vh
+    margin: 0 auto 1vh
+    border-radius: 1vh
+    cursor: pointer
+    -webkit-user-select: none  /* Chrome all / Safari all */
+    -moz-user-select: none     /* Firefox all */
+    -ms-user-select: none      /* IE 10+ */
+    user-select: none          /* Likely future */
+
+    &:hover
+      background-color: lighten($primary, 20%)
+      border: 0.5vh solid lighten($primary-contrast, 20%)
+      color: lighten($primary-contrast, 20%)
+      box-shadow: 0 0 5vh 0 rgba(255,255,255,1)
+
+
+  .waiting-text
+    width: 100vw
+    margin: 30vh auto 20vh
+    color: $background-contrast
+    font-weight: bold
+    font-size: 5vh

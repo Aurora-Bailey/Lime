@@ -27,6 +27,7 @@ class WebSocketClass {
             PO.ready = false;
             $('#homepage').removeClass('hide');
             $('#maingame').addClass('hide');
+            $('#waiting').addClass('hide');
         };
         this.server.onmessage = (e) => {
             var d = e.data;
@@ -36,7 +37,10 @@ class WebSocketClass {
                 if(d.m == 'compatible'){
                     if(d.v == false) alert('Your game is out of date, try refreshing the browser.');
                 }else if(d.m == 'ready'){
+                    $('#waiting').addClass('hide');
                     this.sendObj({m: 'start', n: PO.name, t: PO.type});
+                }else if(d.m == 'wait'){
+                    $('#waiting').removeClass('hide');
                 }else if(d.m == 'go'){
                     Game.data.players.list = d.players;
                     Game.data.myId = d.id;
@@ -507,7 +511,7 @@ class GameClass{
                 var id = e[0];
                 var player = this.data.players.list['p' + id];
                 var levelColor = '0x000000';
-                if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
+                if(typeof player != 'undefined' && typeof player.levelColor != 'undefined') levelColor = player.levelColor;
                 var healthPercent = Math.floor(e[4]/10);// from 1000 to 100 for drawing
                 var drawDate = Date.now();
                 //id x y rotation health level
@@ -695,7 +699,7 @@ class GameClass{
                 var player = this.data.players.list['p' + owner];
                 var age = frameTime - e[e.length -1];
                 var levelColor = '0x000000';
-                if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
+                if(typeof player != 'undefined' && typeof player.levelColor != 'undefined') levelColor = player.levelColor;
 
                 //this.render.lasers.beginFill('0xff0000');
                 //this.render.lasers.alpha = (1 - age/laserTimeout) * 0.9;
