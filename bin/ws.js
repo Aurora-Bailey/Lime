@@ -107,6 +107,9 @@ if (cluster.isMaster) {
                     }
 
                 }else if(d.m == "start"){
+
+                    console.log(Game.colorAvailable(1));
+
                     var emptySpot = Game.getMapEmpty();
                     var tryId = Lib.randString(4, false, false, true);
                     while(typeof Game.players['p' + tryId] !== 'undefined'){
@@ -122,7 +125,7 @@ if (cluster.isMaster) {
                         velocity: {x: 0, y: 0},
                         rank: 0,
                         score: 10,
-                        color: Math.ceil(Math.random() * 6),
+                        color: Game.leastCommonColor(),
                         level: 0,
                         levelBonus: 1,
                         health: 1000,
@@ -242,8 +245,9 @@ if (cluster.isMaster) {
             this.ready = false;
             // Game data
             this.genRankList = false;
-            this.maxPlayers = 10;
+            this.maxPlayers = 6;
             this.numPlayers = 0;
+            this.numColors = 6;
             this.players = {};
 
             //Map
@@ -313,6 +317,47 @@ if (cluster.isMaster) {
             this.ready = true;
         }
 
+        static leastCommonColor(){// 0 is white
+            var numColors = this.numColors;
+            var colorCount = [];
+            var smallest = 1000;
+            var leastColors = [];
+            for(let i=1; i<=numColors; i++){// skip white, initialize all colors to 0
+                colorCount[i] = 0;
+            }
+            for(let key in this.players) {// count the colors
+                if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                var c = this.players[key].color;
+                colorCount[c]++;
+            }
+            for(let i=1; i<=numColors; i++){// Get the smallest color
+                if(colorCount[i] < smallest)
+                    smallest = colorCount[i];
+            }
+            for(let i=1; i<=numColors; i++){// make an array with all colors equal to smallest
+                if(colorCount[i] == smallest)
+                    leastColors.push(i);
+            }
+            return leastColors[Math.floor(leastColors.length * Math.random())];// return random from smallest array
+        }
+
+        static colorAvailable(colorNum){
+            var numColors = this.numColors;
+            var colorCount = [];
+            for(let i=1; i<=numColors; i++){// skip white, initialize all colors to 0
+                colorCount[i] = 0;
+            }
+            for(let key in this.players) {// count the colors
+                if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                var c = this.players[key].color;
+                colorCount[c]++;
+            }
+
+            return this.maxPlayers/this.numColors > colorCount[colorNum];
+        }
+
         static removePlayer(id){
             // delete player from server
             delete this.players['p' + id];
@@ -323,7 +368,7 @@ if (cluster.isMaster) {
 
         static getPlayers(){// name type etc..
             var x = {};
-            for(var key in this.players) {
+            for(let key in this.players) {
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
                 x['p' + this.players[key].id] = {
                     id: this.players[key].id,

@@ -97,8 +97,8 @@ class WebSocketClass {
                         Game.data.players.list['p' + id].level = e[2];
 
                         // calculate what color the level is
-                        var flipLevelColor = 2 - parseFloat(e[2])/1200;
-                        var modLevelColor = (flipLevelColor + 0.85) % 1;
+                        var flipLevelColor = 2 - parseFloat(e[2])/3000;
+                        var modLevelColor = (flipLevelColor + 0.35) % 1;
                         Game.data.players.list['p' + id].levelColor = Game.color.hslToHex(modLevelColor, 1, 0.5);
 
 
