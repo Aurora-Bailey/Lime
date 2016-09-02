@@ -1,13 +1,12 @@
 {
   "name": "lime",
-  "version": "0.0.1",
+  "version": "0.9.1",
   "private": true,
   "scripts": {
     "start": "node ./bin/www"
   },
   "dependencies": {
     "express": "~4.13.1",
-    "schemapack": "^1.4.2",
     "ws": "^1.1.1"
   },
   "devDependencies": {
