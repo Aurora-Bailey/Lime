@@ -27,6 +27,10 @@ $('#waiting-cancel').on('click', function(){
     }
 });
 
+$('#friend-link').on('click', function(){
+    this.select();
+});
+
 $(window).on('mousedown', function(e){
     if(!PO.ready)return true;
     if(e.button == 0){

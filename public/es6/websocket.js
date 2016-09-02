@@ -8,10 +8,10 @@ class WebSocketClass {
         if(this.connected)//already connected.
             return false;
 
-        if(__DEV){
+        if(DEV){
             this.server = new WebSocket('ws://localhost:7777');
         }else {
-            this.server = new WebSocket('ws://ws.' + __DOMAIN + '/');
+            this.server = new WebSocket('ws://ws.' + DOMAIN + '/');
         }
 
         this.server.binaryType = 'arraybuffer';
@@ -42,6 +42,8 @@ class WebSocketClass {
                 }else if(d.m == 'go'){
                     Game.data.players.list = d.players;
                     Game.data.myId = d.id;
+                    Game.data.serverName = d.server;
+                    Game.data.roomName = d.room;
                     Game.data.map = d.map;
                     Game.data.serverTick = d.tick;
                     Game.data.minimapTick = d.minitick;
@@ -54,7 +56,8 @@ class WebSocketClass {
                     $('#chat-log').html('');
                     Game.chatMessage("Press [Enter] to open/close chat.", 'game');
                     Game.chatMessage("You can only chat with " + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color) + " players.", 'game');
-                    var playerId = d.id;
+
+                    $('#friend-link').text(DOMAIN + '/#' + d.server + '-' + d.room + '-' + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color));
                 }else if(d.m == 'dead'){
                     $('#respawn').removeClass('hide');
                     Game.chatMessage("You're Dead!", 'game');
