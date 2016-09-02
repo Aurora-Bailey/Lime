@@ -11,7 +11,7 @@ var gulp = require('gulp'),
     cleanCSS = require('gulp-clean-css');
 
 // Javascripts
-gulp.task('es6', function() {
+gulp.task('es6', function() { // join es6 files
     return gulp.src('public/es6/*.js')
         .pipe(babel({
             presets: ['es2015']
@@ -20,6 +20,9 @@ gulp.task('es6', function() {
             "globalvar.js",
             "prototypes.js",
             "lib.js",
+            "websocket.js",
+            "playerout.js",
+            "maingame.js",
             "main.js",
             "**/*.js"
         ]))
@@ -28,19 +31,17 @@ gulp.task('es6', function() {
         .pipe(gulp.dest('public/js'));
 });
 
-gulp.task('js', ['es6'], function() {
+gulp.task('js', ['es6'], function() {// join pure javascritp files
     return gulp.src('public/js/*.js')
         .pipe(order([
             "jquery.min.js",
             "jquery*.js",
             "pixi*.js",
-            "websocket.js",
-            "playerout.js",
-            "maingame.js",
             "main*.js",
             "**/*.js"
         ]))
         .pipe(concat('script.min.js'))
+        .pipe(uglify({mangle: true}))
         .pipe(gulp.dest('public/min'));
 
 });
