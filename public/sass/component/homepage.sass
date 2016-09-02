@@ -2,7 +2,6 @@
 @import "mixins"
 
 #homepage
-  position: relative
   z-index: 1
 
   #logo
@@ -75,3 +74,44 @@
         box-shadow: 0 0 5vh 0 rgba(0,255,0,1)
       &#type-def:hover
         box-shadow: 0 0 5vh 0 rgba(0,0,255,1)
+
+#custom-server
+  position: absolute
+  bottom: 2vh
+  right: 2vh
+  display: inline-block
+  font-size: 2vh
+  line-height: 3vh
+  color: $background-contrast
+
+  #enter-server-input-wrapper
+    background-color: $primary
+    border: 0.25vh solid $primary-contrast
+    color: $primary-contrast
+    width: 20vh
+    height: 3vh
+    border-radius: 0.5vh
+    display: inline-block
+
+    #enter-server-input
+      font-size: 2vh
+      width: 20vh
+      height: 3vh
+      border: none
+      background-color: transparent
+      text-align: center
+      color: darken($primary-contrast, 40%)
+
+      &::-webkit-input-placeholder /* WebKit, Blink, Edge */
+        color:     lighten($primary-contrast, 10%)
+      &:-moz-placeholder /* Mozilla Firefox 4 to 18 */
+         color:    lighten($primary-contrast, 10%)
+         opacity:  1
+      &::-moz-placeholder /* Mozilla Firefox 19+ */
+         color:    lighten($primary-contrast, 10%)
+         opacity:  1
+      &:-ms-input-placeholder  /* Internet Explorer 10-11 */
+         color:    lighten($primary-contrast, 10%)
+
+      &:focus
+        outline: none

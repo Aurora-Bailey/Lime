@@ -9,16 +9,16 @@ class WebSocketClass {
             return false;
 
         if(DEV){
-            this.server = new WebSocket('ws://localhost:7777');
+            this.server = new WebSocket('ws://localhost:7777' + '/' + encodeURI(PO.room));
         }else {
-            this.server = new WebSocket('ws://ws.' + DOMAIN + '/');
+            this.server = new WebSocket('ws://ws.' + DOMAIN + '/' + encodeURI(PO.room));
         }
 
         this.server.binaryType = 'arraybuffer';
 
         this.server.onopen = () => {
             this.connected = true;
-            this.sendObj({m: 'compatible', v: compatible});
+            this.sendObj({m: 'compatible', v: compatible, wantcolor: PO.color});
         };
         this.server.onclose = () => {
             this.connected = false;
@@ -57,7 +57,8 @@ class WebSocketClass {
                     Game.chatMessage("Press [Enter] to open/close chat.", 'game');
                     Game.chatMessage("You can only chat with " + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color) + " players.", 'game');
 
-                    $('#friend-link').text(DOMAIN + '/#' + d.server + '-' + d.room + '-' + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color));
+                    $('#friend-link').find('span')
+                        .html(DOMAIN + '/#' + d.server + '-' + d.room + '-' + Lib.numToColorNameProper(Game.data.players.list['p' + Game.data.myId].color));
                 }else if(d.m == 'dead'){
                     $('#respawn').removeClass('hide');
                     Game.chatMessage("You're Dead!", 'game');

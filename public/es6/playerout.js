@@ -7,6 +7,11 @@ class PlayerOutput{
         this.name = '';
         this.type = 0;
 
+        // server stuff
+        this.server = '';
+        this.room = '';
+        this.color = 0;
+
         // chat
         this.chatMode = false;
 

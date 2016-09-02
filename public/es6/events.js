@@ -27,8 +27,28 @@ $('#waiting-cancel').on('click', function(){
     }
 });
 
-$('#friend-link').on('click', function(){
-    this.select();
+$('#friend-link').on('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    $(this).find('span').select();
+});
+
+$('#enter-server-input').on('change', function(){
+    var x = $('#enter-server-input').val();
+    x = x.replace('#', '');
+
+    var arr = x.split('-');
+
+    if(typeof arr[0] != 'undefined' && arr[0].length > 0){
+        PO.server = arr[0];
+    }
+    if(typeof arr[1] != 'undefined' && arr[1].length > 0){
+        PO.room = arr[1];
+    }
+    if(typeof arr[2] != 'undefined' && arr[2].length > 0){
+        PO.color = Lib.colorToNum(arr[2]);
+    }
+
 });
 
 $(window).on('mousedown', function(e){
@@ -38,6 +58,7 @@ $(window).on('mousedown', function(e){
     }else if(e.button == 2){
         PO.thrust(true);
     }
+    return true;
 
 });
 $(window).on('mouseup', function(e){
@@ -47,6 +68,7 @@ $(window).on('mouseup', function(e){
     }else if(e.button == 2){
         PO.thrust(false)
     }
+    return true;
 });
 $(window).on('keydown', function(e){
     if(!PO.ready)return true;
@@ -102,4 +124,11 @@ $(window).on('mousemove', function(e){
     var rad = Math.atan2(delta.Y, delta.X);
     PO.tick.direction = Math.floor(rad * 1000);
     PO.tickchanged = true;
+});
+
+$('document').ready(function(){
+    if(window.location.hash != ''){
+        $('#enter-server-input').val(window.location.hash).trigger('change');
+        window.location.hash = '';
+    }
 });

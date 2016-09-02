@@ -73,6 +73,17 @@ class Lib {
         }
     }
 
+    static colorToNum(c){
+        c = c.toLowerCase();
+        var colors = {white: 0, purple: 1, blue: 2, green: 3, yellow: 4, orange: 5, red: 6};
+
+        if(typeof colors[c] !== 'undefined')
+            return colors[c];
+        else{
+            return colors['white'];
+        }
+    }
+
     static betweenTwoNum(fromNum, toNum, zeroToOneComplete){
         var distance = toNum - fromNum;
         return fromNum + (distance * zeroToOneComplete);
