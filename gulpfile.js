@@ -34,6 +34,9 @@ gulp.task('js', ['es6'], function() {
             "jquery.min.js",
             "jquery*.js",
             "pixi*.js",
+            "websocket.js",
+            "playerout.js",
+            "maingame.js",
             "main*.js",
             "**/*.js"
         ]))
