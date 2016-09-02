@@ -106,20 +106,46 @@ class WebSocketClass {
                         Game.data.players.list['p' + id].levelColor = Game.color.hslToHex(modLevelColor, 1, 0.5);
 
 
-                        // add to rank board
-                        $('#ranks').prepend(
-                            $('<div />')
-                                .addClass(Lib.numToColorNameProper(Game.data.players.list['p' + id].color).toLowerCase())
-                                .append(
-                                    $('<span />')
-                                        .text('' + e[1] + ' - ')
-                                )
-                                .append(
-                                    $('<span />')
-                                        .text(Game.data.players.list['p' + id].name)
-                                )
+                        // class to be added only to the players rank
+                        var myRank = '';
+                        if(id == Game.data.myId){
+                            myRank = 'myrank';
 
-                        );
+                        }
+
+                        // add to rank board
+                        if(e[1] <= 10){
+                            $('#ranks').prepend(
+                                $('<div />')
+                                    .addClass(Lib.numToColorNameProper(Game.data.players.list['p' + id].color).toLowerCase())
+                                    .addClass(myRank)
+                                    .append(
+                                        $('<span />')
+                                            .text('' + e[1] + ' - ')
+                                    )
+                                    .append(
+                                        $('<span />')
+                                            .text(Game.data.players.list['p' + id].name)
+                                    )
+
+                            );
+                        }else if(id == Game.data.myId){
+                            $('#ranks').append(
+                                $('<div />')
+                                    .addClass(Lib.numToColorNameProper(Game.data.players.list['p' + id].color).toLowerCase())
+                                    .addClass(myRank)
+                                    .append(
+                                        $('<span />')
+                                            .text('' + e[1] + ' - ')
+                                    )
+                                    .append(
+                                        $('<span />')
+                                            .text(Game.data.players.list['p' + id].name)
+                                    )
+
+                            );
+                        }
+
                     });
                     // id rank level
                 }
@@ -306,7 +332,7 @@ class GameClass{
         this.data.config.health.color = 'player';
         this.data.config.background = {};
         this.data.config.background.style = 'grid';
-        this.data.config.background.color = 'light';
+        this.data.config.background.color = 'dark';
         this.data.map = [];
         this.data.players = {tick: [], list: [], minimap: [], rank: []};
         this.data.oldPlayers = {tick: [], list: [], minimap: [], rank: []};// one tick behind for smoothing the frames
@@ -510,8 +536,9 @@ class GameClass{
                 var offset = {x: e[1], y: e[2], r: e[3]/1000};
                 var id = e[0];
                 var player = this.data.players.list['p' + id];
+                if(typeof player == 'undefined') return false;
                 var levelColor = '0x000000';
-                if(typeof player != 'undefined' && typeof player.levelColor != 'undefined') levelColor = player.levelColor;
+                if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
                 var healthPercent = Math.floor(e[4]/10);// from 1000 to 100 for drawing
                 var drawDate = Date.now();
                 //id x y rotation health level
@@ -697,9 +724,10 @@ class GameClass{
                 var offset = {x1: e[0], y1: e[1], x2: e[2], y2: e[3]};
                 var owner = e[4];
                 var player = this.data.players.list['p' + owner];
+                if(typeof player == 'undefined') return false;
                 var age = frameTime - e[e.length -1];
                 var levelColor = '0x000000';
-                if(typeof player != 'undefined' && typeof player.levelColor != 'undefined') levelColor = player.levelColor;
+                if(typeof player.levelColor != 'undefined') levelColor = player.levelColor;
 
                 //this.render.lasers.beginFill('0xff0000');
                 //this.render.lasers.alpha = (1 - age/laserTimeout) * 0.9;

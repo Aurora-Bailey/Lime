@@ -285,7 +285,7 @@ if (cluster.isMaster) {
             this.ready = false;
             // Game data
             this.genRankList = false;
-            this.maxPlayers = 6;
+            this.maxPlayers = 60;
             this.numPlayers = 0;
             this.numColors = 6;
             this.players = {};

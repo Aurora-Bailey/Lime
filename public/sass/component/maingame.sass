@@ -68,10 +68,9 @@
 #chat-log, #ranks
   position: absolute
   z-index: 1006
-  height: 10vh
+
   margin: auto
   background-color: rgba(0,0,0, 0.6)
-  overflow: hidden
   font-size: 1.9vh
   -webkit-transition: height 0.5s, background-color 0.5s, -webkit-transform 0.5s
   transition: height 0.5s, background-color 0.5s, transform 0.5s
@@ -106,8 +105,10 @@
 #chat-log
   left: 0
   bottom: 0
+  height: 10vh
   width: 35vh
   padding: 0.5vh 0 0 0
+  overflow: hidden
 
   &:hover
     height: 40vh
@@ -119,10 +120,15 @@
   top: 0
   right: 0
   width: 20vh
-  height: 30vh
   padding: 0.25vh 0
 
   div
     height: 3vh
     line-height: 3vh
     text-align: center
+
+  .myrank
+    border: 0.4vh solid white
+    border-left: none
+    border-right: none
+    background-color: rgba(0,0,0, 0.1)
