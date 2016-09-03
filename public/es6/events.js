@@ -53,6 +53,7 @@ $('#enter-server-input').on('change', function(){
 
 });
 
+// Mouse
 $(window).on('mousedown', function(e){
     if(!PO.ready)return true;
     if(e.button == 0){
@@ -72,6 +73,56 @@ $(window).on('mouseup', function(e){
     }
     return true;
 });
+
+//Touch
+$(window).on('touchstart', function(e){
+    if(!PO.ready)return true;
+    if(typeof e.touches[1] != 'undefined'){
+        PO.weapon(true);
+    }else{
+        PO.thrust(true);
+        var mouse = {X: e.touches[0].clientX, Y: e.touches[0].clientY};
+        var screen = {W: $(window).width(), H: $(window).height()};
+        var delta = {X: mouse.X - (screen.W / 2), Y: mouse.Y - (screen.H / 2)};
+        var rad = Math.atan2(delta.Y, delta.X);
+        PO.tick.direction = Math.floor(rad * 1000);
+        PO.tickchanged = true;
+    }
+    return true;
+});
+$(window).on('touchend', function(e){
+    if(!PO.ready)return true;
+    if(typeof e.touches[1] != 'undefined'){
+        PO.weapon(false);
+    }else{
+        PO.thrust(false)
+    }
+    return true;
+});
+
+// mouse
+$(window).on('mousemove', function(e){
+    if(!PO.ready)return true;
+    var mouse = {X: e.clientX, Y: e.clientY};
+    var screen = {W: $(window).width(), H: $(window).height()};
+    var delta = {X: mouse.X - (screen.W / 2), Y: mouse.Y - (screen.H / 2)};
+    var rad = Math.atan2(delta.Y, delta.X);
+    PO.tick.direction = Math.floor(rad * 1000);
+    PO.tickchanged = true;
+});
+
+// touch
+$(window).on('touchmove', function(e){
+    e.preventDefault();
+    if(!PO.ready)return true;
+    var mouse = {X: e.targetTouches[0].clientX, Y: e.targetTouches[0].clientY};
+    var screen = {W: $(window).width(), H: $(window).height()};
+    var delta = {X: mouse.X - (screen.W / 2), Y: mouse.Y - (screen.H / 2)};
+    var rad = Math.atan2(delta.Y, delta.X);
+    PO.tick.direction = Math.floor(rad * 1000);
+    PO.tickchanged = true;
+});
+
 $(window).on('keydown', function(e){
     if(!PO.ready)return true;
     if(!PO.chatMode){
@@ -118,15 +169,6 @@ $(window).on('keyup', function(e){
 
 
 });
-$(window).on('mousemove', function(e){
-    if(!PO.ready)return true;
-    var mouse = {X: e.clientX, Y: e.clientY};
-    var screen = {W: $(window).width(), H: $(window).height()};
-    var delta = {X: mouse.X - (screen.W / 2), Y: mouse.Y - (screen.H / 2)};
-    var rad = Math.atan2(delta.Y, delta.X);
-    PO.tick.direction = Math.floor(rad * 1000);
-    PO.tickchanged = true;
-});
 
 $('document').ready(function(){
     if(window.location.hash != ''){
@@ -143,6 +185,11 @@ $('document').ready(function(){
             $('#chat-log').addClass('fullsize');
         if(settings.chatsize == 'half')
             $('#chat-log').addClass('halfsize');
+    }
+
+
+    if(Lib.isMobile()){// force zoom for moblie
+        Game.zoom(2);
     }
 });
 $(window).on('unload', function(){

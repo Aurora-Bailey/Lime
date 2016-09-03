@@ -19,6 +19,13 @@ class Lib {
         return text;
     }
 
+    static isMobile(){
+        if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) )
+            return true;
+        else
+            return false;
+    };
+
     static saveSettings(){
         localStorage.settings = JSON.stringify(settings);
     }
