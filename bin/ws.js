@@ -16,28 +16,39 @@ var cluster = require('cluster'),
 if (cluster.isMaster) {
     var masterPort = parseInt(port) + 777;
     var workers = [];
-    var totalCapacity = 0;// 0-1
+    var totalCapacity = 0;// 0-100
+    var totalPopulation = 0;
     var maxRooms = os.cpus().length * 10;
 
     // Create workers
     var makeWorker = function(){
         var i = workers.length;
         workers[i] = cluster.fork({WORKER_INDEX:i, ROOM_NAME: roomNameList[i]});
-        workers[i].customData = {capacity: 0, ready: false};
+        workers[i].customData = {capacity: 0, population: 0, ready: false};
         workers[i].on('message', (d)=>{
             if(d.m == 'cap'){
-                workers[d.i].customData.capacity = d.v;
+                workers[d.i].customData.capacity = d.v;// 0-1
+                workers[d.i].customData.population = d.p;
                 let x = 0;
                 let c = 0;
+                totalPopulation = 0;
                 workers.forEach((e, i)=>{
                     if(e.state == 'listening' && e.customData.ready){
+                        totalPopulation += e.customData.population;
                         x += e.customData.capacity;
                         c++;
                     }
                 });
-                totalCapacity = x / c;
+                totalCapacity = Math.floor((x / c) * 100);// 1-100
+
+                workers.forEach((e, i)=>{// send data back to workers
+                    if(e.state == 'listening' && e.customData.ready){
+                        e.send({m: 'population', v: totalCapacity, p: totalPopulation});
+                    }
+                });
+
                 // spawn new worker
-                if(totalCapacity >= 0.9 && os.loadavg()[0] <= 0.8 && workers.length < maxRooms) makeWorker();
+                if(totalCapacity >= 90 && os.loadavg()[0] <= 0.8 && workers.length < maxRooms) makeWorker();
             }else if(d.m == 'ready'){
                 workers[d.i].customData.ready = true;
             }
@@ -90,14 +101,14 @@ if (cluster.isMaster) {
 
     app.use(function (req, res) {
         // This is sent when the WebSocket is requested as a webpage
-        console.log(req.url);
-        res.send("Server " + ROOM_NAME);
+        if(req.url == '/')
+            res.send(JSON.stringify({server: SERVER_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
     });
 
     wss.on('connection', function connection(ws) {
         ws.connected = true;
         Game.numConnected++;
-        process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, i: WORKER_INDEX});
+        process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, p: Game.numConnected, i: WORKER_INDEX});
 
         ws.playing = false;
         ws.waiting = false;
@@ -350,6 +361,12 @@ if (cluster.isMaster) {
         if ("doit" === m) {
             server.emit('connection', c);
             c.resume();
+        }else if(typeof m === 'object'){
+            if(m.m == 'population'){
+                Game.numConnectedAllRooms = m.p;
+                Game.capacityAllRooms = m.v;
+            }
+
         }
     });
 
@@ -363,6 +380,8 @@ if (cluster.isMaster) {
             this.maxPlayers = 10;
             this.numPlayers = 0;
             this.numConnected = 0; // number of spots filled, includes dc and waiting players
+            this.numConnectedAllRooms = 0;
+            this.capacityAllRooms = 0;
             this.numColors = 6;
             this.players = {};
             this.waitingList = [];
@@ -483,7 +502,7 @@ if (cluster.isMaster) {
             delete this.players['p' + id];
             this.numPlayers--;
             this.numConnected--;
-            process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, i: WORKER_INDEX});
+            process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, p: Game.numConnected, i: WORKER_INDEX});
             this.genRankList = true;
             // delete player from client
             wss.broadcast(JSON.stringify({m: 'dcplayer', v: id}));
@@ -1169,8 +1188,8 @@ if (cluster.isMaster) {
 
                 //console.log(this.getServerLoad(false));
             }
-            // Executes one per game minute
-            if (this.loopCount % (60000 / this.loopDelay) == 0) {
+            // Console out server load every 15 minutes
+            if (this.loopCount % ((1000 * 60 * 15) / this.loopDelay) == 0) {
 
                 // Kick player if they have been dead for 10 minutes
                 var curDate = Date.now();
