@@ -132,3 +132,13 @@ $('document').ready(function(){
         window.location.hash = '';
     }
 });
+
+var flipTutorial = function(){
+    var $showing = $('#tutorial').find('.show').addClass('hide').removeClass('show');
+    if($showing.next().length > 0)
+        $showing.next().addClass('show').removeClass('hide');
+    else
+        $('#tutorial').find('div').first().addClass('show').removeClass('hide');
+    window.setTimeout(flipTutorial, 7000);
+};
+window.setTimeout(flipTutorial, 7000);

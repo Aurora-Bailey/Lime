@@ -141,3 +141,21 @@
 
       &:focus
         outline: none
+
+#tutorial
+  width: 100vw
+  text-align: center
+  margin: 10vh auto
+  font-size: 2vh
+  color: darken($background-contrast, 20%)
+
+  div
+    -webkit-transition: opacity 2s, height 2s, -webkit-transform 2s
+    transition: opacity 2s, height 2s, transform 2s
+
+  .show
+    opacity: 1
+  .hide
+    display: block
+    opacity: 0
+    height: 0
