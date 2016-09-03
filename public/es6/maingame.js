@@ -5,7 +5,7 @@ class GameClass{
         // Core
         this.center = {x: $(window).width() / 2, y: $(window).height() / 2};
         this.view = {x: 2000, y: 1000};// will be overwritten by game.zoom
-        this.zoomLevel = 3;
+        this.zoomLevel = (typeof settings.zoom !== 'undefined' ? settings.zoom:3);
         this.renderer = PIXI.autoDetectRenderer(this.view.x, this.view.y,{backgroundColor : '0x000000'});
         this.renderer.baseResolution = {width: this.renderer.width, height: this.renderer.height};
         $('#maingame').append(this.renderer.view);
@@ -19,12 +19,12 @@ class GameClass{
         this.data = {};
         this.data.config = {};
         this.data.config.health = {};
-        this.data.config.health.style = 'circle';
-        this.data.config.health.alpha = 0.5;
-        this.data.config.health.color = 'player';
+        this.data.config.health.style = (typeof settings.healthstyle !== 'undefined' ? settings.healthstyle: 'circle');
+        this.data.config.health.alpha =  (typeof settings.healthalpha !== 'undefined' ? settings.healthalpha: 0.5);
+        this.data.config.health.color = (typeof settings.healthcolor !== 'undefined' ? settings.healthcolor: 'player');
         this.data.config.background = {};
-        this.data.config.background.style = 'grid';
-        this.data.config.background.color = 'dark';
+        this.data.config.background.style = (typeof settings.backstyle !== 'undefined' ? settings.backstyle: 'grid');
+        this.data.config.background.color = (typeof settings.backcolor !== 'undefined' ? settings.backcolor: 'dark');
         this.data.map = [];
         this.data.players = {tick: [], list: [], minimap: [], rank: []};
         this.data.oldPlayers = {tick: [], list: [], minimap: [], rank: []};// one tick behind for smoothing the frames
@@ -48,16 +48,18 @@ class GameClass{
         this.render.miniplayers = new PIXI.Graphics();
 
         // Background for the map layer
+        /* disable colorfog
         this.render.backgroundImageDark = PIXI.Texture.fromImage('images/colorfog.jpg');
         this.render.backgroundImageLight = PIXI.Texture.fromImage('images/colorfoglight.jpg');
         this.render.background = new PIXI.extras.TilingSprite(this.render.backgroundImageDark, 1000, 1000);
+        */
 
         // Player names
         this.render.names = [];
 
         // Building the parent child tree
         this.render.world.addChild(this.render.camera);
-        this.render.camera.addChild(this.render.background);
+        //this.render.camera.addChild(this.render.background);
         this.render.camera.addChild(this.render.map);
         this.render.camera.addChild(this.render.players);
         this.render.camera.addChild(this.render.lasers);
@@ -74,21 +76,21 @@ class GameClass{
             var mapPixels = blocksize * this.data.map.length;
             var mapLength = this.data.map.length;
 
-            this.render.background.width = mapPixels;
-            this.render.background.height = mapPixels;
+            //this.render.background.width = mapPixels;
+            //this.render.background.height = mapPixels;
 
             this.render.map.clear();
 
             var mapColor = {};
             if(this.data.config.background.color == 'light'){
-                this.render.background.texture = this.render.backgroundImageLight;
+                //this.render.background.texture = this.render.backgroundImageLight;
                 this.renderer.backgroundColor = '0xffffff';
                 mapColor.outline = '0x999999';
                 mapColor.mainGridLine = '0xCCCCCC';
                 mapColor.sideGridLine = '0xDDDDDD';
                 mapColor.colorGrid = '0xEEEEEE';
             }else{
-                this.render.background.texture = this.render.backgroundImageDark;
+                //this.render.background.texture = this.render.backgroundImageDark;
                 this.renderer.backgroundColor = '0x000000';
                 mapColor.outline = '0xffffff';
                 mapColor.mainGridLine = '0x333333';
@@ -562,51 +564,141 @@ class GameClass{
         if(parts[0] == '//'){
             if(parts[1] == 'health'){
                 if(parts[2] == 'style'){
-                    if(parts[3] == 'bar')
+                    if(parts[3] == 'bar'){
                         this.data.config.health.style = 'bar';
-                    else
+                        settings.healthstyle = 'bar';
+                        Lib.saveSettings();
+                    }
+                    else{
                         this.data.config.health.style = 'circle';
+                        settings.healthstyle = 'circle';
+                        Lib.saveSettings();
+                    }
 
                 }else if(parts[2] == 'alpha'){
                     let num = parseFloat(parts[3]);
-                    if(!isNaN(num))
+                    if(!isNaN(num)){
                         this.data.config.health.alpha = num;
+                        settings.healthalpha = num;
+                        Lib.saveSettings();
+                    }
 
                 }else if(parts[2] == 'color'){
-                    if(parts[3] == 'default')
+                    if(parts[3] == 'default'){
                         this.data.config.health.color = 'default';
-                    else if(parts[3] == 'class')
+                        settings.healthcolor = 'default';
+                        Lib.saveSettings();
+                    }
+                    else if(parts[3] == 'class'){
                         this.data.config.health.color = 'class';
-                    else
+                        settings.healthcolor = 'class';
+                        Lib.saveSettings();
+                    }
+                    else{
                         this.data.config.health.color = 'player';
+                        settings.healthcolor = 'player';
+                        Lib.saveSettings();
+                    }
 
                 }
             }else if(parts[1] == 'background'){
                 if(parts[2] == 'style'){
-                    if(parts[3] == 'grid')
+                    if(parts[3] == 'grid'){
                         this.data.config.background.style = 'grid';
-                    else
+                        settings.backstyle = 'grid';
+                        Lib.saveSettings();
+                    }
+                    else{
                         this.data.config.background.style = 'colorfog';
+                        settings.backstyle = 'colorfog';
+                        Lib.saveSettings();
+                    }
 
                     this.draw.map();
                 }else if(parts[2] == 'color'){
-                    if(parts[3] == 'light')
+                    if(parts[3] == 'light'){
                         this.data.config.background.color = 'light';
-                    else
+                        settings.backcolor = 'light';
+                        Lib.saveSettings();
+                    }
+                    else{
                         this.data.config.background.color = 'dark';
+                        settings.backcolor = 'dark';
+                        Lib.saveSettings();
+                    }
 
                     this.draw.map();
                 }
 
             }else if(parts[1] == 'zoom'){
                 let num = parseInt(parts[2]);
-                if(!isNaN(num))
+                if(!isNaN(num)){
                     this.zoom(num);
+                    settings.zoom = num;
+                    Lib.saveSettings();
+                }
+
 
             }else if(parts[1] == 'id'){
                 Game.chatMessage("Your ID is: " + this.data.myId, 'game');
             }else if(parts[1] == 'ping'){
                 WS.sendObj({m: 'ping', v: Date.now()});
+            }else if(parts[1] == 'clearsettings'){
+                settings = {};
+                Lib.saveSettings();
+            }else if(parts[1] == 'light'){// shortcut for // background color light
+                this.data.config.background.color = 'light';
+                settings.backcolor = 'light';
+                Lib.saveSettings();
+                this.draw.map();
+            }else if(parts[1] == 'dark'){// shortcut for // background color dark
+                this.data.config.background.color = 'dark';
+                settings.backcolor = 'dark';
+                Lib.saveSettings();
+                this.draw.map();
+            }else if(parts[1] == 'ragequit'){
+                WS.server.close();
+            }else if(parts[1] == 'superhack'){
+                PO.tick.message = 'ಠ_ಠ';
+                PO.tickchanged = true;
+            }else if(parts[1] == 'chat'){// make chat non collapsable
+                if(parts[2] == 'full'){
+                    settings.chatsize = 'full';
+                    $('#chat-log').addClass('fullsize').removeClass('halfsize');
+                    Lib.saveSettings();
+                }else if(parts[2] == 'half'){
+                    settings.chatsize = 'half';
+                    $('#chat-log').addClass('halfsize').removeClass('fullsize');
+                    Lib.saveSettings();
+                }else{
+                    settings.chatsize = 'min';
+                    $('#chat-log').removeClass('fullsize').removeClass('halfsize');
+                    Lib.saveSettings();
+                }
+            }
+
+            return true;
+        }else if(parts[0] == '#'){
+            if(parts[1] == 'rage'){
+                PO.tick.message = '(ノಠ益ಠ)ノ彡┻━┻';
+                PO.tickchanged = true;
+            }else if(parts[1] == 'furious'){
+                PO.tick.message = '┻━┻ ︵ヽ(`Д´)ﾉ︵ ┻━┻';
+                PO.tickchanged = true;
+            }else if(parts[1] == 'itsok'){
+                PO.tick.message = '┬─┬ノ( º _ ºノ)';
+                PO.tickchanged = true;
+            }else if(parts[1] == 'cheer'){
+                PO.tick.message = '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧';
+                PO.tickchanged = true;
+            }else if(parts[1] == 'happy'){
+                PO.tick.message = '(^̮^)';
+                PO.tickchanged = true;
+            }else if(parts[1] == 'party'){
+                PO.tick.message = 'ヾ(⌐■_■)ノ♪';
+                PO.tickchanged = true;
+            }else{
+                Game.chatMessage("Commands: rage furious itsok happy cheer party", 'game');
             }
 
             return true;

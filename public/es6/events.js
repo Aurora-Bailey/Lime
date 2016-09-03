@@ -137,6 +137,13 @@ $('document').ready(function(){
     if(typeof settings.name !== 'undefined'){
         $('#enter-name-input').val(settings.name).trigger('change');
     }
+
+    if(typeof settings.chatsize !== 'undefined'){
+        if(settings.chatsize == 'full')
+            $('#chat-log').addClass('fullsize');
+        if(settings.chatsize == 'half')
+            $('#chat-log').addClass('halfsize');
+    }
 });
 $(window).on('unload', function(){
     //asdf

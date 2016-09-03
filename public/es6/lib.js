@@ -26,12 +26,12 @@ class Lib {
     // Takes an object (obj.a = 10 obj.b = 20 etc...) returns the random key (b)
     static weightedRandom(obj){
         var total = 0;
-        for(var key in obj)
-            total += obj[key];
+        for(let k in obj)
+            total += obj[k];
 
         var r = Math.random() * total;
 
-        for(var key in obj){
+        for(let key in obj){
             if(r < obj[key])
                 return key;
             r -= obj[key];
