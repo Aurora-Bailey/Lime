@@ -10,22 +10,71 @@ var SERVER_NAME = process.env.SERVER_NAME,
 var roomNameList = ["Zero","What","Seek","Luck","Sick","Last","Dust","Feel","Able","Tour","Area","Pick","Cost","Tone","Told","Busy","Ship","Free","Time","Well","Take","Into","Beer","Wake","Task","Rear","Gain","Grow","Snow","Plan","Path","Gray","Went","Care","Lift","Ruth","Burn","Dark","Rain","Farm","Poll","Hell","Baby","West","Some","Team","Deny","Hang","Feet","This","None","Park","Rely","Rate","Very","Give","Born","Wind","Tend","Copy","Room","Much","Bush","Does","Seed","Wave","Crop","Bomb","Goes","Plus","Bell","Loss","When","Best","Away","Only","Fuel","Skin","Drug","Self","Whom","Note","Huge","Shop","Dual","Mere","Each","Late","Pass","Term","Hold","Boom","Past","Fire","Peak","Sand","Wall","Flow","Mean","With","Lady","Ways","Talk","Page","Navy","Kent","Spot","Pair","Want","Save","Fast","Used","Size","Been","Must","Goal","Rice","Drop","Next","Body","Kept","Neck","Food","Thin","Bowl","Warm","Once","Dawn","Hear","Real","Were","Gulf","Need","Case","Dean","Turn","List","Rare","Read","Lord","Step","Held","Lose","Cast","Boss","Root","Sole","Menu","Sure","View","Seem","More","Love","Roof","Then","Wine","Keep","Bear","Role","Long","File","Fell","Tale","Cope","Trip","Done","Took","Item","Sept","Mine","Than","Pack","Site","Heat","Home","Blue","Iron","City","Bill","Toll","Wild","Roll","Upon","Fall","Edge","Deep","Mike","Dial","Over","Tank","Find","Half","Suit","Wash","Ward","Desk","They","Club","Tape","Meet","Send","Lock","Sort","Fate","Line","Twin","Wage","Safe","Hour","Road","Sold","Nick","Move","Kill","Fill","Host","Face","Post","Pull","Sent","Cook","Keen","Soft","Them","Hard","Grew","Both","East","Even","Disk","Glad","Wife","Paid","Port","Code","Gate","Gave","Mile","Stay","Male","Ease","Push","Wear","Week","Cool","Oral","Slip","Type","Hall","Shot","Nine","Moon","Till","Play","Easy","Palm","Sell","Harm","Soul","Vast","Bird","Made","Jean","Hire","Link","Wood","Mind","Kick","Sign","Felt","Also","Wish","Town","Land","Slow","Wise","Ring","True","Gone","Have","Beat","Like","Wore","Mode","Boat","Unit","Sale","Feed","Flat","Hero","Knew","Hair","Bond","John","Hate","Rose","Such","Word","Mass","Tell","Lead","Meal","Tool","Vote","Yeah","Crew","Same","Down","Milk","Data","Acid","Life","Lack","Just","Blow","Year","Wing","Fear","Inch","Band","Tall","Said","Know","Camp","Jack","Many","Loan","Song","Fact","Left","Show","Jane","Help","Fair","Days","Chat","Part","Else","Make","Game","Fort","Four","Tech","Fine","Join","Side","Pink","Bone","Kind","Fail","Will","Matt","Laid","Rule","Bath","Dose","Rent","Load","Meat","Rise","Wait","That","Okay","High","Mill","Disc","Open","Ford","Thus","Fund","Film","Yard","Form","Back","Full","Chip","Soon","Seen","Weak","Tune","Coal","Mark","Work","Your","Lake","Lane","Diet","Salt","Sake","Seat","Deal","Duty","Knee","Call","Hope","Bank","Date","Logo","Debt","Nice","Hill","Zone","Pure","King","Race","Onto","Soil","Ball","Tiny","Vary","Risk","Girl","From","Hole","Hand","Lost","Plot","Rich","Rail","Come","Card","Main","Name","Near","Rush","Pipe","Vice","Bulk","Gene","Hurt","Less","Jump","Calm","Hung","Cold","Here","Dead","News","Head","Mail","Test","Aged","Live","CORE","Most","Dear","Coat","Rock","Cell","Hunt","Star","Poor","Pool","Shut","Look","Came","Evil","Gift","Exit","Duke","Army","Holy","Stop","Door","Miss","Plug","Book","Pace","Mood","Tony","Belt","Foot","Ever","Fish","Rest","Golf","Nose","Good","Wire","Base","Walk","Cash","Drew","Ride","Rank","Pain","Wide","Earn","Idea","Firm","Five","User","Tree","Draw","Gear"];
 
 var cluster = require('cluster'),
-    nodesPerCore = 1,
+    os = require('os'),
     port = 7000;
 
 if (cluster.isMaster) {
     var masterPort = parseInt(port) + 777;
     var workers = [];
+    var totalCapacity = 0;// 0-1
 
     // Create workers
-    for (var i=0; i < nodesPerCore * require('os').cpus().length; i++) {
+    var makeWorker = function(){
+        var i = workers.length;
         workers[i] = cluster.fork({WORKER_INDEX:i, ROOM_NAME: roomNameList[i]});
-    }
+        workers[i].customData = {capacity: 0, ready: false};
+        workers[i].on('message', (d)=>{
+            if(d.m == 'cap'){
+                workers[d.i].customData.capacity = d.v;
+                let x = 0;
+                let c = 0;
+                workers.forEach((e, i)=>{
+                    if(e.state == 'listening' && e.customData.ready){
+                        x += e.customData.capacity;
+                        c++;
+                    }
+                });
+                totalCapacity = x / c;
+                // spawn new worker
+                if(totalCapacity >= 0.9 && os.loadavg()[0] <= 0.8 && workers.length < 2) makeWorker();
+            }else if(d.m == 'ready'){
+                workers[d.i].customData.ready = true;
+            }
+        });
+    };
+    makeWorker();// first worker
 
     // Create net server at master
     var netServer = require('net').createServer({pauseOnConnect:true}, function(c) {
-        var r = Math.floor( Math.random()*workers.length );
-        workers[r].send("doit",c);
+        var bestServer = false;
+        workers.forEach((e,i)=>{
+            if(bestServer === false){
+                if(e.state == 'listening' && e.customData.ready && e.customData.capacity < 1){
+                    bestServer = workers[i];
+                }
+            }else if(e.state == 'listening' && e.customData.ready && e.customData.capacity > bestServer.customData.capacity && e.customData.capacity < 1){
+                bestServer = workers[i];
+            }
+        });
+
+        if(bestServer === false){// still false, all servers full
+            workers.forEach((e,i)=>{
+                if(bestServer === false){
+                    if(e.state == 'listening' && e.customData.ready){
+                        bestServer = workers[i];
+                    }
+                }else if(e.state == 'listening' && e.customData.ready && e.customData.capacity < bestServer.customData.capacity){
+                    bestServer = workers[i];// lowest population of full servers
+                }
+            });
+        }
+
+        if(bestServer === false){// all servers must be dead
+            console.log('all servers must be dead!');
+        }else{
+            bestServer.send("doit",c);
+        }
+
     }).listen(masterPort);
 } else {
     var WORKER_INDEX = process.env.WORKER_INDEX,
@@ -46,6 +95,9 @@ if (cluster.isMaster) {
 
     wss.on('connection', function connection(ws) {
         ws.connected = true;
+        Game.numConnected++;
+        process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, i: WORKER_INDEX});
+
         ws.playing = false;
         ws.waiting = false;
         ws.stage = 0;
@@ -307,8 +359,9 @@ if (cluster.isMaster) {
             this.ready = false;
             // Game data
             this.genRankList = false;
-            this.maxPlayers = 60;
+            this.maxPlayers = 10;
             this.numPlayers = 0;
+            this.numConnected = 0; // number of spots filled, includes dc and waiting players
             this.numColors = 6;
             this.players = {};
             this.waitingList = [];
@@ -379,6 +432,7 @@ if (cluster.isMaster) {
             // Start the game loop
             this.loop();
             this.ready = true;
+            process.send({m: 'ready', v: true, i: WORKER_INDEX});
         }
 
         static leastCommonColor(){// 0 is white
@@ -427,6 +481,8 @@ if (cluster.isMaster) {
             // delete player from server
             delete this.players['p' + id];
             this.numPlayers--;
+            this.numConnected--;
+            process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, i: WORKER_INDEX});
             this.genRankList = true;
             // delete player from client
             wss.broadcast(JSON.stringify({m: 'dcplayer', v: id}));
@@ -562,7 +618,6 @@ if (cluster.isMaster) {
                         else
                             this.players[key].score = Math.floor(this.players[key].score + score * 0.8);
 
-                        console.log(this.players[key]);
                     }
 
                 }
