@@ -50,7 +50,8 @@
     margin: auto
     text-align: center
 
-    div
+    div.type-button
+      position: relative
       line-height: 9.75vh
       font-size: 5vh
       width: 9.75vh
@@ -74,6 +75,31 @@
         box-shadow: 0 0 5vh 0 rgba(0,255,0,1)
       &#type-def:hover
         box-shadow: 0 0 5vh 0 rgba(0,0,255,1)
+
+      .description
+        display: none
+        font-size: 2vh
+        line-height: 3vh
+        width: 20vh
+        margin: auto
+        position: absolute
+        top: 13vh
+        left: -20vh
+        right: -20vh
+        padding: 2vh
+        background-color: $primary
+        border: 0.5vh solid $primary-contrast
+        color: $primary-contrast
+        border-radius: 1vh
+
+        .highlight
+          color: darken($primary-contrast, 20%)
+          font-weight: bold
+
+      &:hover .description
+        display: block
+
+
 
 #custom-server
   position: absolute

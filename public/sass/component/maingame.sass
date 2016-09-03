@@ -10,6 +10,15 @@
   background-color: black
   z-index: 1000
 
+#minimap, #chat-log, #ranks, #friend-link
+  background-color: rgba(0,0,0, 0.6)
+  font-size: 1.9vh
+  -webkit-transition: height 0.5s, background-color 0.5s, -webkit-transform 0.5s
+  transition: height 0.5s, background-color 0.5s, transform 0.5s
+  border: 0.5vh solid rgba(120,120,120,0.6)
+
+  &:hover
+    background-color: rgba(0,0,0, 0.8)
 
 #minimap
   height: 25vh
@@ -19,8 +28,11 @@
   bottom: 0
   opacity: 0.7
   z-index: 1010
+  border-radius: 0.5vh 0 0 0
   -webkit-transition: opacity 0.5s, -webkit-transform 0.5s
   transition: opacity 0.5s, transform 0.5s
+  border-right: none
+  border-bottom: none
 
   &:hover
     opacity: 0.9
@@ -68,15 +80,7 @@
 #chat-log, #ranks
   position: absolute
   z-index: 1006
-
   margin: auto
-  background-color: rgba(0,0,0, 0.6)
-  font-size: 1.9vh
-  -webkit-transition: height 0.5s, background-color 0.5s, -webkit-transform 0.5s
-  transition: height 0.5s, background-color 0.5s, transform 0.5s
-
-  &:hover
-    background-color: rgba(0,0,0, 0.8)
 
   div
     pointer-events: none
@@ -109,6 +113,9 @@
   width: 35vh
   padding: 0.5vh 0 0 0
   overflow: hidden
+  border-radius: 0 0.5vh 0 0
+  border-bottom: none
+  border-left: none
 
   &:hover
     height: 40vh
@@ -120,7 +127,10 @@
   top: 0
   right: 0
   width: 20vh
-  padding: 0.25vh 0
+  padding: 0.25vh 0 0
+  border-radius: 0 0 0 0.5vh
+  border-right: none
+  border-top: none
 
   div
     height: 3vh
@@ -128,10 +138,7 @@
     text-align: center
 
   .myrank
-    border: 0.4vh solid white
-    border-left: none
-    border-right: none
-    background-color: rgba(0,0,0, 0.2)
+    background-color: rgba(255,255,255, 0.3)
 
 #friend-link
   position: absolute
@@ -141,10 +148,13 @@
   display: inline-block
   font-size: 1.9vh
   padding: 0.5vh 1vh 0.5vh 0.5vh
-  background-color: rgba(0,0,0, 0.6)
   color: white
+  border-radius: 0 0 0.5vh 0
+  border-left: none
+  border-top: none
 
   span
     color: #3399ff
     font-weight: bold
+
 
