@@ -1,5 +1,4 @@
-var DEV = true,
-    version = 0.001,
+var version = 0.001,
     compatible = '9ICXM7PGXJ',
     DOMAIN = 'yoza.io';
 
