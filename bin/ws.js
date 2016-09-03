@@ -17,6 +17,7 @@ if (cluster.isMaster) {
     var masterPort = parseInt(port) + 777;
     var workers = [];
     var totalCapacity = 0;// 0-1
+    var maxRooms = os.cpus().length * 10;
 
     // Create workers
     var makeWorker = function(){
@@ -36,7 +37,7 @@ if (cluster.isMaster) {
                 });
                 totalCapacity = x / c;
                 // spawn new worker
-                if(totalCapacity >= 0.9 && os.loadavg()[0] <= 0.8 && workers.length < 2) makeWorker();
+                if(totalCapacity >= 0.9 && os.loadavg()[0] <= 0.8 && workers.length < maxRooms) makeWorker();
             }else if(d.m == 'ready'){
                 workers[d.i].customData.ready = true;
             }
