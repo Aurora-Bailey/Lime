@@ -72,11 +72,11 @@ if (cluster.isMaster) {
 
                         var plId = 'p' + ws.playerId;
                         if(Game.players[plId].health != 0){
-                            if(d[1] != 0)
+                            if(d[1] != 0 && !isNaN(d[1]))
                                 Game.players[plId].direction = parseInt(d[1]);
-                            if(d[2] != 0)
+                            if(d[2] != 0 && !isNaN(d[2]))
                                 Game.players[plId].thruster = parseInt(d[2]);
-                            if(d[3] != 0)
+                            if(d[3] != 0 && !isNaN(d[3]))
                                 Game.players[plId].weapon = parseInt(d[3]);
                         }
 
@@ -140,6 +140,18 @@ if (cluster.isMaster) {
                     while(typeof Game.players['p' + tryId] !== 'undefined'){
                         tryId = Lib.randString(4, false, false, true);
                     }
+
+                    // Clean input
+                    if(typeof d.n == 'undefined') d.n = '';
+                    var cleanName = d.n.slice(0,12);// cut name to 12 char
+                    if(cleanName.length < 1) cleanName = 'Nameless' + tryId;
+
+                    if(typeof d.t == 'undefined') d.t = 0;
+                    if(isNaN(d.t)) d.t = 0;
+                    var cleanType = parseInt(d.t);
+                    if(cleanType > 2 || cleanType < 0) cleanType = 0;
+
+
                     tryId = parseInt(tryId);
                     ws.playerId = tryId;
                     Game.players['p' + tryId] = {
@@ -158,8 +170,8 @@ if (cluster.isMaster) {
                         defense: 1, // 0=no damage, 1=all damage
                         connected: true,
                         id: tryId,
-                        name: (d.n == ''? 'Nameless' + tryId: d.n),
-                        type: d.t,
+                        name: cleanName,
+                        type: cleanType,
                         x: (emptySpot.x * Game.mapConfig.units) + (Game.mapConfig.units / 2),
                         y: (emptySpot.y * Game.mapConfig.units) + (Game.mapConfig.units / 2),
                         direction: 0,
