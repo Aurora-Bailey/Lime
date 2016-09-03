@@ -19,7 +19,9 @@ class Lib {
         return text;
     }
 
-
+    static saveSettings(){
+        localStorage.settings = JSON.stringify(settings);
+    }
 
     // Takes an object (obj.a = 10 obj.b = 20 etc...) returns the random key (b)
     static weightedRandom(obj){

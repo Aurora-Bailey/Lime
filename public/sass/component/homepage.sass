@@ -152,6 +152,11 @@
   div
     -webkit-transition: opacity 2s, height 2s, -webkit-transform 2s
     transition: opacity 2s, height 2s, transform 2s
+    pointer-events: none
+    -webkit-user-select: none /* Chrome all / Safari all */
+    -moz-user-select: none    /* Firefox all */
+    -ms-user-select: none     /* IE 10+ */
+    user-select: none         /* Likely future */
 
   .show
     opacity: 1

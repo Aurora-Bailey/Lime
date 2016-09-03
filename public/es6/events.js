@@ -1,6 +1,8 @@
 // Events
-$('#enter-name-input').on('keyup', function(){
+$('#enter-name-input').on('change', function(){
     PO.name = $(this).val();
+    settings.name = PO.name;
+    Lib.saveSettings();
 });
 $('.type-button').on('click', function(){
     PO.type = $(this).attr('data-value');
@@ -131,6 +133,13 @@ $('document').ready(function(){
         $('#enter-server-input').val(window.location.hash).trigger('change');
         window.location.hash = '';
     }
+
+    if(typeof settings.name !== 'undefined'){
+        $('#enter-name-input').val(settings.name).trigger('change');
+    }
+});
+$(window).on('unload', function(){
+    //asdf
 });
 
 var flipTutorial = function(){
