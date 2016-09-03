@@ -377,7 +377,7 @@ if (cluster.isMaster) {
             this.ready = false;
             // Game data
             this.genRankList = false;
-            this.maxPlayers = 10;
+            this.maxPlayers = (WORKER_INDEX == 0? 30:60);
             this.numPlayers = 0;
             this.numConnected = 0; // number of spots filled, includes dc and waiting players
             this.numConnectedAllRooms = 0;
