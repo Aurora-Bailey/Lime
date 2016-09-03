@@ -40,7 +40,8 @@ if (cluster.isMaster) {
 
     app.use(function (req, res) {
         // This is sent when the WebSocket is requested as a webpage
-        res.send("This is a WebSocket -_-");
+        console.log(req.url);
+        res.send("Server " + ROOM_NAME);
     });
 
     wss.on('connection', function connection(ws) {
@@ -342,9 +343,10 @@ if (cluster.isMaster) {
                 }
             });
 
-            // TimingbonusBlockOneOutOf
-            this.loopDelay = 1000/20;//20 ticks per second
-            this.minimapDelay = this.loopDelay * 4;// every 4 ticks
+            // Timing
+            this.ticksPerSecnod = 20;//20 ticks per second
+            this.loopDelay = 1000/this.ticksPerSecnod;
+            this.minimapDelay = this.loopDelay * 5;// every 5 ticks
 
             // Default
             this.lastLoop = Date.now();
@@ -537,13 +539,20 @@ if (cluster.isMaster) {
                 return 'tps: ' + this.serverLoad.tps + ' Average: ' + this.serverLoad.current + '% High: ' + this.serverLoad.high + '% Low: ' + this.serverLoad.low + '% (percent of one core used per tick)';
         }
 
-        static killPrize(x, y, distance, color, score){ // currently weapon distance/2
+        static killPrize(x, y, distance, color, killerid, score){ // currently weapon distance/2
             for(let key in this.players){
                 if (!this.players.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
 
                 if(this.players[key].color == color){
-                    if(Lib.distance(x, y, this.players[key].x, this.players[key].y) < distance)
-                        this.players[key].score = Math.floor(this.players[key].score + score);
+                    if(Lib.distance(x, y, this.players[key].x, this.players[key].y) < distance){
+                        if(this.players[key].id == killerid)
+                            this.players[key].score = Math.floor(this.players[key].score + score);
+                        else
+                            this.players[key].score = Math.floor(this.players[key].score + score * 0.8);
+
+                        console.log(this.players[key]);
+                    }
+
                 }
             }
         }
@@ -948,7 +957,7 @@ if (cluster.isMaster) {
 
                                     // killer prize
                                     this.players[key].health = this.players[key].maxHealth;
-                                    this.killPrize(this.players[key].x, this.players[key].y, this.players[key].weaponDistance / 2, this.players[key].color, this.players['p' + playerHit].score / 2);
+                                    this.killPrize(this.players[key].x, this.players[key].y, this.players[key].weaponDistance / 2, this.players[key].color, this.players[key].id, this.players['p' + playerHit].score / 2);
                                     if(this.players[key].connected)
                                         this.players[key].ws.sendObj({m: 'killed', v: this.players['p' + playerHit].name});
 
