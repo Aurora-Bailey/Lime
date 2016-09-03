@@ -26,6 +26,34 @@ class Lib {
             return false;
     };
 
+    static pingWebSocket(){ // pulls from serverList and serverActive
+        // ping for best server
+        serverList.forEach((e,i)=>{
+            var pws = new WebSocket('ws://' + e + '/');
+            pws.onopen = () => {
+                pws.connected = true;
+                pws.send(JSON.stringify({m: 'loadping', v: Date.now()}));
+            };
+            pws.onclose = () => {
+                pws.connected = false;
+            };
+            pws.onmessage = (x) => {
+                var d = JSON.parse(x.data);
+                if(d.m == 'loadping'){
+                    serverActive[d.s + Math.random()] = {
+                        server: d.s,
+                        ip: e,
+                        ping: Date.now() - d.v,
+                        population: d.p,
+                        capacity: d.c,
+                        health: d.h
+                    };
+                    pws.close();
+                }
+            };
+        });
+    }
+
     static saveSettings(){
         localStorage.settings = JSON.stringify(settings);
     }

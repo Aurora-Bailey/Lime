@@ -171,15 +171,22 @@ $(window).on('keyup', function(e){
 });
 
 $('document').ready(function(){
+
+    // get best server
+    Lib.pingWebSocket();
+
+    // process join hash
     if(window.location.hash != ''){
         $('#enter-server-input').val(window.location.hash).trigger('change');
         window.location.hash = '';
     }
 
+    // load name from settings
     if(typeof settings.name !== 'undefined'){
         $('#enter-name-input').val(settings.name).trigger('change');
     }
 
+    // load chat size from settings
     if(typeof settings.chatsize !== 'undefined'){
         if(settings.chatsize == 'full')
             $('#chat-log').addClass('fullsize');
@@ -187,8 +194,8 @@ $('document').ready(function(){
             $('#chat-log').addClass('halfsize');
     }
 
-
-    if(Lib.isMobile()){// force zoom for moblie
+    // force zoom for moblie
+    if(Lib.isMobile()){
         Game.zoom(2);
     }
 });

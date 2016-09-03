@@ -107,11 +107,10 @@ if (cluster.isMaster) {
 
     wss.on('connection', function connection(ws) {
         ws.connected = true;
-        Game.numConnected++;
-        process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, p: Game.numConnected, i: WORKER_INDEX});
-
         ws.playing = false;
         ws.waiting = false;
+        ws.registered = false;// in the player object?
+        ws.counted = false;
         ws.stage = 0;
         ws.sendObj = function (obj) {
             try{
@@ -271,6 +270,8 @@ if (cluster.isMaster) {
                     // Generate new rank list
                     Game.genRankList = true;
 
+                    ws.registered = true;
+
                     ws.stage = 2;
 
                     ws.sendObj({m:'go', server: SERVER_NAME, room: ROOM_NAME, id: tryId, players: Game.getPlayers(), block: Game.mapConfig.units, map: Game.map, tick: Game.loopDelay, minitick: Game.minimapDelay});
@@ -302,6 +303,9 @@ if (cluster.isMaster) {
                             ws.sendObj({m: 'wait'});
                         }
                         ws.stage = 1;
+                        Game.numConnected++;
+                        ws.counted = true;
+                        process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, p: Game.numConnected, i: WORKER_INDEX});
                     }else{
                         ws.sendObj({m: 'compatible', v: false});
                     }
@@ -319,6 +323,8 @@ if (cluster.isMaster) {
                     }
                 }else if(d.m == 'ping' && ws.stage == 2){
                     ws.sendObj(d);
+                }else if(d.m == 'loadping'){
+                    ws.sendObj({m: d.m, v: d.v, s: SERVER_NAME, p: Game.numConnectedAllRooms, c: Game.capacityAllRooms, h: Math.floor(os.loadavg()[0] * 100)});
                 }
             }
             catch(err){
@@ -328,6 +334,12 @@ if (cluster.isMaster) {
 
         ws.on('close', function(){
             ws.connected = false;
+
+            if(!ws.registered && ws.counted){// quit before recieving player status
+                Game.numConnected--;
+                process.send({m: 'cap', v: Game.numConnected / Game.maxPlayers, p: Game.numConnected, i: WORKER_INDEX});
+            }
+
             if(typeof ws.playerId == 'undefined' || typeof Game.players['p' + ws.playerId] == 'undefined') return false;
 
             Game.players['p' + ws.playerId].connected = false;
