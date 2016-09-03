@@ -8,11 +8,27 @@ class WebSocketClass {
         if(this.connected)//already connected.
             return false;
 
-        if(DEV){
-            this.server = new WebSocket('ws://localhost:7777' + '/' + encodeURI(PO.room));
-        }else {
-            this.server = new WebSocket('ws://ws.' + DOMAIN + '/' + encodeURI(PO.room));
+        var bestServer = false;
+        if(typeof serverActive[PO.server.toLowerCase()] !== 'undefined'){// try the users server
+            bestServer = serverActive[PO.server.toLowerCase()];
+            console.log('loaded server data.');
+        }else{
+            for(let key in serverActive){// pick server with lowest ping
+                if (!serverActive.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
+
+                if(bestServer === false){
+                    bestServer = serverActive[key];
+                }else{
+                    if(bestServer.ping > serverActive[key].ping){
+                        bestServer = serverActive[key];
+                    }
+                }
+            }
         }
+
+        if(bestServer === false) return false;
+
+        this.server = new WebSocket('ws://' + bestServer.ip + '/' + encodeURI(PO.room));
 
         this.server.binaryType = 'arraybuffer';
 

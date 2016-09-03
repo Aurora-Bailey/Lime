@@ -8,7 +8,7 @@ class PlayerOutput{
         this.type = 0;
 
         // server stuff
-        this.server = '';
+        this.server = 'NONE';
         this.room = '';
         this.color = 0;
 

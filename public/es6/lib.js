@@ -40,7 +40,7 @@ class Lib {
             pws.onmessage = (x) => {
                 var d = JSON.parse(x.data);
                 if(d.m == 'loadping'){
-                    serverActive[d.s + Math.random()] = {
+                    serverActive[d.s.toLowerCase()] = {
                         server: d.s,
                         ip: e,
                         ping: Date.now() - d.v,
