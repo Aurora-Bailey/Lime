@@ -416,8 +416,8 @@ if (cluster.isMaster) {
                     this.mapHealth[i][k] = 0;
                 }
             }
-            var colorBlockOneOutOf = 50;
-            var bonusBlockOneOutOf = 2000;
+            var colorBlockOneOutOf = 40;
+            var bonusBlockOneOutOf = 1800;
             var mapItems = [
                 {value: 1, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
                 {value: 2, amount: Math.floor(this.mapConfig.area / colorBlockOneOutOf)},
