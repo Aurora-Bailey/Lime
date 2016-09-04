@@ -55,6 +55,7 @@ if (cluster.isMaster) {
         });
     };
     makeWorker();// first worker
+    makeWorker();// second worker
 
     // Create net server at master
     var netServer = require('net').createServer({pauseOnConnect:true}, function(c) {
