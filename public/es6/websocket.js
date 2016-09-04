@@ -18,7 +18,7 @@ class WebSocketClass {
                 if(bestServer === false){
                     bestServer = serverActive[key];
                 }else{
-                    if(bestServer.ping > serverActive[key].ping){
+                    if(bestServer.ping > serverActive[key].ping && serverActive[key].capacity < 100 || bestServer.capacity > 100 && serverActive[key].capacity < 100){
                         bestServer = serverActive[key];
                     }
                 }
