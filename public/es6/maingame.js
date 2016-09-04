@@ -279,7 +279,6 @@ class GameClass{
                     healthColor.empty = '0xff0000';
                     healthColor.outline = '0x000000';
                 }else if(this.data.config.health.color == 'class'){
-                    console.log(player.type);
                     if(player.type == 0){
                         healthColor.full = '0xff0000';
                         healthColor.empty = '0x333333';

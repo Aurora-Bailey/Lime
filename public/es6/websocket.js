@@ -11,7 +11,6 @@ class WebSocketClass {
         var bestServer = false;
         if(typeof serverActive[PO.server.toLowerCase()] !== 'undefined'){// try the users server
             bestServer = serverActive[PO.server.toLowerCase()];
-            console.log('loaded server data.');
         }else{
             for(let key in serverActive){// pick server with lowest ping
                 if (!serverActive.hasOwnProperty(key)) continue;// skip loop if the property is from prototype
@@ -47,7 +46,7 @@ class WebSocketClass {
             var d = e.data;
             if(typeof e.data == 'string'){
                 d = JSON.parse(d);
-                console.log(d);
+                if(CLIENT_ENV == 'development') console.log(d);
                 if(d.m == 'compatible'){
                     if(d.v == false) alert('Your game is out of date, try refreshing the browser.');
                 }else if(d.m == 'ready'){
