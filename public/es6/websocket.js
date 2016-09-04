@@ -27,7 +27,7 @@ class WebSocketClass {
 
         if(bestServer === false) return false;
 
-        this.server = new WebSocket('ws://' + bestServer.ip + '/' + encodeURI(PO.room));
+        this.server = new WebSocket('ws://' + bestServer.ip + '/' + encodeURI(PO.room.toLowerCase()));
 
         this.server.binaryType = 'arraybuffer';
 
