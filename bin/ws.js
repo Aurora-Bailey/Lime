@@ -101,10 +101,7 @@ if (cluster.isMaster) {
 
     app.use(function (req, res) {
         // This is sent when the WebSocket is requested as a webpage
-        if(req.url == '/')
-            res.send(JSON.stringify({server: SERVER_NAME, room: ROOM_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
-        if(req.url == '/*')
-           res.send(JSON.stringify({server: SERVER_NAME, room: ROOM_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
+        res.send(JSON.stringify({server: SERVER_NAME, room: ROOM_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
 
     });
 
