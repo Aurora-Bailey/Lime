@@ -116,14 +116,14 @@ if (cluster.isMaster) {
             try{
                 ws.send(JSON.stringify(obj));
             }catch(err){
-                console.log(err);
+                if (NODE_ENV == 'development')console.log(err);
             }
         };
         ws.sendBinary = function(data){
             try{
                 ws.send(data, {binary: true});
             }catch(err){
-                console.log(err);
+                if (NODE_ENV == 'development')console.log(err);
             }
         };
         ws.on('message', function incoming(data) {
@@ -358,7 +358,7 @@ if (cluster.isMaster) {
                 if(Game.players[key].ws.connected)
                     Game.players[key].ws.send(data);
             }catch(err){
-                console.log(err);
+                if (NODE_ENV == 'development')console.log(err);
             }
         }
     };
