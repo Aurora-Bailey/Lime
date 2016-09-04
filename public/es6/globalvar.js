@@ -7,5 +7,5 @@ var settings = {};
 if(typeof localStorage.settings !== 'undefined')
     settings = JSON.parse(localStorage.settings);
 
-var serverList = ['192.168.0.3:7777'];
+var serverList = ['192.168.0.3:7777', '173.255.224.138'];
 var serverActive = {};
