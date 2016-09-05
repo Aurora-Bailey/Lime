@@ -1,7 +1,7 @@
 var version = 0.001,
     CLIENT_ENV = 'production',
     compatible = '9ICXM7PGXJ',
-    DOMAIN = 'yoza.io';
+    DOMAIN = 'zolt.io';
 
 var settings = {};
 if(typeof localStorage.settings !== 'undefined')
