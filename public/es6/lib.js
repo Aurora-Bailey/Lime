@@ -122,6 +122,7 @@ class Lib {
     }
 
     static betweenTwoNum(fromNum, toNum, zeroToOneComplete){
+        if(zeroToOneComplete > 1) zeroToOneComplete = 1;
         var distance = toNum - fromNum;
         return fromNum + (distance * zeroToOneComplete);
     }
