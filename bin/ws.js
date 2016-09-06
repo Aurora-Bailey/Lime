@@ -112,7 +112,7 @@ if (cluster.isMaster) {
     app.use(function (req, res) {
         // This is sent when the WebSocket is requested as a webpage
         try{
-            res.send(JSON.stringify({server: SERVER_NAME, version: '0.78.3' room: ROOM_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
+            res.send(JSON.stringify({server: SERVER_NAME, version: '0.78.3', room: ROOM_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
         }catch(err){
             console.log('express res.send');
             console.log(err);
