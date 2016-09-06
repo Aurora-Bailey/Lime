@@ -84,8 +84,17 @@ if (cluster.isMaster) {
 
         if(bestServer === false){// all servers must be dead
             console.log('all servers must be dead!');
+            workers = [];
+            makeWorker();
+            makeWorker();
         }else{
-            bestServer.send("doit",c);
+            try{
+                bestServer.send("doit",c);
+            }catch(err){
+                console.log('err: doit send');
+                console.log(err);
+            }
+
         }
 
     }).listen(masterPort);
@@ -102,8 +111,12 @@ if (cluster.isMaster) {
 
     app.use(function (req, res) {
         // This is sent when the WebSocket is requested as a webpage
-        res.send(JSON.stringify({server: SERVER_NAME, room: ROOM_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
-
+        try{
+            res.send(JSON.stringify({server: SERVER_NAME, room: ROOM_NAME, health: Math.floor(os.loadavg()[0] * 100), population: Game.numConnectedAllRooms, capacity: Game.capacityAllRooms}));
+        }catch(err){
+            console.log('express res.send');
+            console.log(err);
+        }
     });
 
     wss.on('connection', function connection(ws) {
@@ -329,7 +342,7 @@ if (cluster.isMaster) {
                 }
             }
             catch(err){
-                if (NODE_ENV == 'development')console.log('Bad Packet: ', data, err);
+                console.log('Bad Packet: ', data, err);
             }
         });
 
@@ -372,8 +385,13 @@ if (cluster.isMaster) {
     // Get message from master and check if need pass to http server
     process.on('message', function (m, c) {
         if ("doit" === m) {
-            server.emit('connection', c);
-            c.resume();
+            try{
+                server.emit('connection', c);
+                c.resume();
+            }catch(err){
+                console.log('err: doit recieve');
+                console.log(err);
+            }
         }else if(typeof m === 'object'){
             if(m.m == 'population'){
                 Game.numConnectedAllRooms = m.p;
