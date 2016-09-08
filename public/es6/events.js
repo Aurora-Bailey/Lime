@@ -53,8 +53,8 @@ $('#enter-server-input').on('change', function(){
 
 });
 
-// Mouse
-$(window).on('mousedown', function(e){
+// Controls
+$('#render').on('mousedown', function(e){
     if(!PO.ready)return true;
     if(e.button == 0){
         PO.weapon(true);
@@ -63,8 +63,7 @@ $(window).on('mousedown', function(e){
     }
     return true;
 
-});
-$(window).on('mouseup', function(e){
+}).on('mouseup', function(e){
     if(!PO.ready)return true;
     if(e.button == 0){
         PO.weapon(false);
@@ -72,10 +71,7 @@ $(window).on('mouseup', function(e){
         PO.thrust(false)
     }
     return true;
-});
-
-//Touch
-$(window).on('touchstart', function(e){
+}).on('touchstart', function(e){
     if(!PO.ready)return true;
     if(typeof e.touches[1] != 'undefined'){
         PO.weapon(true);
@@ -89,8 +85,7 @@ $(window).on('touchstart', function(e){
         PO.tickchanged = true;
     }
     return true;
-});
-$(window).on('touchend', function(e){
+}).on('touchend', function(e){
     if(!PO.ready)return true;
     if(typeof e.touches[1] != 'undefined'){
         PO.weapon(false);
@@ -98,10 +93,7 @@ $(window).on('touchend', function(e){
         PO.thrust(false)
     }
     return true;
-});
-
-// mouse
-$(window).on('mousemove', function(e){
+}).on('mousemove', function(e){
     if(!PO.ready)return true;
     var mouse = {X: e.clientX, Y: e.clientY};
     var screen = {W: $(window).width(), H: $(window).height()};
@@ -109,10 +101,7 @@ $(window).on('mousemove', function(e){
     var rad = Math.atan2(delta.Y, delta.X);
     PO.tick.direction = Math.floor(rad * 1000);
     PO.tickchanged = true;
-});
-
-// touch
-$(window).on('touchmove', function(e){
+}).on('touchmove', function(e){
     e.preventDefault();
     if(!PO.ready)return true;
     var mouse = {X: e.targetTouches[0].clientX, Y: e.targetTouches[0].clientY};
@@ -123,7 +112,10 @@ $(window).on('touchmove', function(e){
     PO.tickchanged = true;
 });
 
-$(window).on('keydown', function(e){
+
+$(window).on('unload', function(){
+    //asdf
+}).on('keydown', function(e){
     if(!PO.ready)return true;
     if(!PO.chatMode){
         if(e.keyCode == 87){
@@ -137,8 +129,7 @@ $(window).on('keydown', function(e){
         return false;
     }
 
-});
-$(window).on('keyup', function(e){
+}).on('keyup', function(e){
     if(!PO.ready)return true;
     if(!PO.chatMode){
         if(e.keyCode == 87){
@@ -194,9 +185,6 @@ $('document').ready(function(){
     if(Lib.isMobile()){
         Game.zoom(2);
     }
-});
-$(window).on('unload', function(){
-    //asdf
 });
 
 var flipTutorial = function(){
