@@ -164,10 +164,6 @@ $(window).on('keyup', function(e){
         }
         return false;
     }
-
-
-
-
 });
 
 $('document').ready(function(){

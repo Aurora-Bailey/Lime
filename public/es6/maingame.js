@@ -8,7 +8,7 @@ class GameClass{
         this.zoomLevel = (typeof settings.zoom !== 'undefined' ? settings.zoom:3);
         this.renderer = PIXI.autoDetectRenderer(this.view.x, this.view.y,{backgroundColor : '0x000000'});
         this.renderer.baseResolution = {width: this.renderer.width, height: this.renderer.height};
-        $('#maingame').append(this.renderer.view);
+        $('#render').append(this.renderer.view);
 
         // Mini Map
         this.rendererMinimap = PIXI.autoDetectRenderer(400, 400,{backgroundColor : '0x000000'});
