@@ -41,6 +41,7 @@ class WebSocketClass {
             $('#homepage').removeClass('hide');
             $('#maingame').addClass('hide');
             $('#waiting').addClass('hide');
+            Lib.pingWebSocket();
         };
         this.server.onmessage = (e) => {
             var d = e.data;
