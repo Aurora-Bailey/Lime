@@ -20,6 +20,12 @@
 
   &:hover
     background-color: rgba(0,0,0, 0.8)
+#minimap, #chat-log, #ranks
+  pointer-events: none
+  -webkit-user-select: none /* Chrome all / Safari all */
+  -moz-user-select: none    /* Firefox all */
+  -ms-user-select: none     /* IE 10+ */
+  user-select: none         /* Likely future */
 
 #render
   position: absolute
@@ -85,34 +91,6 @@
     &:focus
       outline: none
 
-#chat-log, #ranks
-  z-index: 1006
-  margin: auto
-
-  div
-    pointer-events: none
-    -webkit-user-select: none /* Chrome all / Safari all */
-    -moz-user-select: none    /* Firefox all */
-    -ms-user-select: none     /* IE 10+ */
-    user-select: none         /* Likely future */
-
-  .game
-    color: #CCC
-  .red
-    color: #ff8080
-  .orange
-    color: orange
-  .yellow
-    color: yellow
-  .green
-    color: lime
-  .blue
-    color: #33ccff
-  .purple
-    color: #cc99ff
-  .white
-    color: white
-
 #chat-log
   left: 0
   bottom: 0
@@ -123,6 +101,7 @@
   border-radius: 0 0.5vh 0 0
   border-bottom: none
   border-left: none
+  z-index: 1006
 
   &.halfsize
     height: 20vh
@@ -134,7 +113,6 @@
   div
     padding: 0.1vh 0.5vh
 
-
 #ranks
   top: 0
   right: 0
@@ -143,6 +121,7 @@
   border-radius: 0 0 0 0.5vh
   border-right: none
   border-top: none
+  z-index: 1005
 
   div
     height: 3vh
@@ -170,4 +149,19 @@
     font-weight: bold
     white-space: nowrap
 
-
+.game
+  color: #CCC
+.red
+  color: #ff8080
+.orange
+  color: orange
+.yellow
+  color: yellow
+.green
+  color: lime
+.blue
+  color: #33ccff
+.purple
+  color: #cc99ff
+.white
+  color: white
