@@ -18,8 +18,6 @@
   transition: height 0.5s, background-color 0.5s, transform 0.5s
   border: 0.5vh solid rgba(120,120,120,0.6)
 
-  &:hover
-    background-color: rgba(0,0,0, 0.8)
 #minimap, #chat-log, #ranks
   pointer-events: none
   -webkit-user-select: none /* Chrome all / Safari all */
@@ -47,9 +45,6 @@
   transition: opacity 0.5s, transform 0.5s
   border-right: none
   border-bottom: none
-
-  &:hover
-    opacity: 0.9
 
 #enter-chat
   position: absolute
@@ -94,7 +89,7 @@
 #chat-log
   left: 0
   bottom: 0
-  height: 10vh
+  height: 20vh
   width: 35vh
   padding: 0.5vh 0 0 0
   overflow: hidden
@@ -104,10 +99,8 @@
   z-index: 1006
 
   &.halfsize
-    height: 20vh
+    height: 30vh
   &.fullsize
-    height: 40vh
-  &:hover
     height: 40vh
 
   div
