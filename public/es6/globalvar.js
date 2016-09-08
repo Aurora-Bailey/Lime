@@ -1,7 +1,7 @@
 var version = 0.001,
     CLIENT_ENV = 'development',
     //CLIENT_ENV = 'production',
-    compatible = '9ICXM7PGXJ',
+    compatible = 'G6F95GDF64JKR',
     DOMAIN = 'zolt.io';
 
 var settings = {};
