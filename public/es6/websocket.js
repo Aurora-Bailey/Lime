@@ -233,5 +233,12 @@ class WebSocketClass {
         }
         this.server.send(JSON.stringify(object));
     }
+    sendBinary(data) {
+        if(this.connected == false){
+            alert('WebSocket is not connected.');
+            return false;
+        }
+        this.server.send(data, {binary: true});
+    }
 }
 var WS = new WebSocketClass();
